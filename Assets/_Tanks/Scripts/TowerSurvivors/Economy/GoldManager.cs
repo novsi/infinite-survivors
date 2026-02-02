@@ -58,9 +58,16 @@ namespace TowerSurvivors
         private void GeneratePassiveGold()
         {
             if (m_PassiveGoldPerSecond <= 0f) return;
-            
+
+            // Only generate gold during Playing state
+            if (TowerSurvivorsGameManager.Instance == null ||
+                TowerSurvivorsGameManager.Instance.CurrentGameState != GameState.Playing)
+            {
+                return;
+            }
+
             m_GoldTimer += Time.deltaTime;
-            
+
             // Generate gold every second
             if (m_GoldTimer >= 1f)
             {

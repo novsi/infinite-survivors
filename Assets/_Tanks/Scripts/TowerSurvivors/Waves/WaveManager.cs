@@ -97,6 +97,13 @@ namespace TowerSurvivors
         
         private void Update()
         {
+            // Only update waves during Playing state
+            if (TowerSurvivorsGameManager.Instance == null ||
+                TowerSurvivorsGameManager.Instance.CurrentGameState != GameState.Playing)
+            {
+                return;
+            }
+
             if (!m_WaveActive && !m_WaitingForEnemyCleanup)
             {
                 UpdateWaveTimer();

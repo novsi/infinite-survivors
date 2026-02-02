@@ -57,13 +57,30 @@ namespace TowerSurvivors
                 Debug.LogError("WeaponInventoryUI: No WeaponManager found!");
                 return;
             }
-            
+
             // Subscribe to WeaponManager events
             m_WeaponManager.OnWeaponAdded.AddListener(OnWeaponAdded);
             m_WeaponManager.OnWeaponRemoved.AddListener(OnWeaponRemoved);
-            
+
+            // Subscribe to game state changes
+            if (TowerSurvivorsGameManager.Instance != null)
+            {
+                TowerSurvivorsGameManager.Instance.OnGameStateChanged.AddListener(OnGameStateChanged);
+            }
+
             // Initialize UI with existing weapons
             InitializeExistingWeapons();
+
+            // Set correct initial visibility based on current game state
+            GameState currentState = TowerSurvivorsGameManager.Instance?.CurrentGameState ?? GameState.MainMenu;
+            OnGameStateChanged(currentState);
+        }
+
+        private void OnGameStateChanged(GameState newState)
+        {
+            // Show inventory during Playing and Paused states, hide during MainMenu and GameOver
+            bool showInventory = newState == GameState.Playing || newState == GameState.Paused;
+            gameObject.SetActive(showInventory);
         }
         
         private void InitializeExistingWeapons()
@@ -402,7 +419,13 @@ namespace TowerSurvivors
                 m_WeaponManager.OnWeaponAdded.RemoveListener(OnWeaponAdded);
                 m_WeaponManager.OnWeaponRemoved.RemoveListener(OnWeaponRemoved);
             }
-            
+
+            // Unsubscribe from game state events
+            if (TowerSurvivorsGameManager.Instance != null)
+            {
+                TowerSurvivorsGameManager.Instance.OnGameStateChanged.RemoveListener(OnGameStateChanged);
+            }
+
             // Clear slots
             ClearAllSlots();
         }

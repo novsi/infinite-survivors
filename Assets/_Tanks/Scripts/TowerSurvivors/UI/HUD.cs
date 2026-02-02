@@ -98,7 +98,7 @@ namespace TowerSurvivors
             UpdateWaveDisplay(m_WaveManager?.CurrentWave ?? 1);
             UpdateSurvivalTime(0f);
             UpdateTowerHealthDisplay(m_TowerHealth?.CurrentHealth ?? 100f);
-            
+
             // Initialize progress bars
             if (m_WaveProgressSlider != null)
             {
@@ -110,6 +110,10 @@ namespace TowerSurvivors
             {
                 m_BossWarningText.gameObject.SetActive(false);
             }
+
+            // Set correct initial visibility based on current game state
+            GameState currentState = m_GameManager?.CurrentGameState ?? GameState.MainMenu;
+            OnGameStateChanged(currentState);
         }
         
         private void Update()
@@ -276,7 +280,31 @@ namespace TowerSurvivors
         {
             // Show/hide UI elements based on game state
             bool showGameplayUI = newState == GameState.Playing || newState == GameState.Paused;
-            gameObject.SetActive(showGameplayUI);
+
+            // Hide/show individual HUD elements
+            if (m_GoldCounterText != null)
+                m_GoldCounterText.gameObject.SetActive(showGameplayUI);
+
+            if (m_WaveNumberText != null)
+                m_WaveNumberText.gameObject.SetActive(showGameplayUI);
+
+            if (m_SurvivalTimeText != null)
+                m_SurvivalTimeText.gameObject.SetActive(showGameplayUI);
+
+            if (m_NextWaveTimerText != null)
+                m_NextWaveTimerText.gameObject.SetActive(showGameplayUI);
+
+            if (m_EnemiesRemainingText != null)
+                m_EnemiesRemainingText.gameObject.SetActive(showGameplayUI);
+
+            if (m_BossWarningText != null && !showGameplayUI)
+                m_BossWarningText.gameObject.SetActive(false);
+
+            if (m_WaveProgressSlider != null)
+                m_WaveProgressSlider.gameObject.SetActive(showGameplayUI);
+
+            if (m_TowerHealthSlider != null)
+                m_TowerHealthSlider.gameObject.SetActive(showGameplayUI);
         }
         
         // Public methods for external control

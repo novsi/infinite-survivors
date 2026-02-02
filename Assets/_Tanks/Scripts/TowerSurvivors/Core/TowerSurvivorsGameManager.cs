@@ -23,6 +23,11 @@ namespace TowerSurvivors
         [SerializeField] private WaveManager m_WaveManager;
         [SerializeField] private EnemySpawner m_EnemySpawner;
         [SerializeField] private TowerHealth m_TowerHealth;
+        [SerializeField] private WeaponManager m_WeaponManager;
+        [SerializeField] private UpgradeManager m_UpgradeManager;
+
+        [Header("Starter Weapon")]
+        [SerializeField] private WeaponData m_StarterWeapon;
         
         [Header("Events")]
         public UnityEvent<GameState> OnGameStateChanged;
@@ -113,15 +118,21 @@ namespace TowerSurvivors
         {
             if (m_GoldManager == null)
                 m_GoldManager = FindObjectOfType<GoldManager>();
-            
+
             if (m_WaveManager == null)
                 m_WaveManager = FindObjectOfType<WaveManager>();
-            
+
             if (m_EnemySpawner == null)
                 m_EnemySpawner = FindObjectOfType<EnemySpawner>();
-            
+
             if (m_TowerHealth == null)
                 m_TowerHealth = FindObjectOfType<TowerHealth>();
+
+            if (m_WeaponManager == null)
+                m_WeaponManager = FindObjectOfType<WeaponManager>();
+
+            if (m_UpgradeManager == null)
+                m_UpgradeManager = FindObjectOfType<UpgradeManager>();
         }
         
         private void SubscribeToEvents()
@@ -193,23 +204,49 @@ namespace TowerSurvivors
         
         private void InitializeGameSystems()
         {
+            // Reset tower health
+            if (m_TowerHealth != null)
+            {
+                m_TowerHealth.FullReset();
+            }
+
             // Reset gold manager
             if (m_GoldManager != null)
             {
                 m_GoldManager.ResetGold();
             }
-            
-            // Reset wave manager
-            if (m_WaveManager != null)
-            {
-                m_WaveManager.ResetWaveSystem();
-                m_WaveManager.StartWaveSystem();
-            }
-            
+
             // Clear any existing enemies
             if (m_EnemySpawner != null)
             {
                 m_EnemySpawner.ClearAllEnemies();
+            }
+
+            // Reset weapon manager and equip starter weapon
+            if (m_WeaponManager != null)
+            {
+                m_WeaponManager.RemoveAllWeapons();
+                m_WeaponManager.ResetAllUpgrades();
+
+                // Equip starter weapon
+                if (m_StarterWeapon != null)
+                {
+                    m_WeaponManager.AddWeapon(m_StarterWeapon);
+                    Debug.Log($"Equipped starter weapon: {m_StarterWeapon.WeaponName}");
+                }
+            }
+
+            // Reset upgrade manager
+            if (m_UpgradeManager != null)
+            {
+                m_UpgradeManager.ResetUpgrades();
+            }
+
+            // Reset wave manager (start this last so waves begin after all systems are ready)
+            if (m_WaveManager != null)
+            {
+                m_WaveManager.ResetWaveSystem();
+                m_WaveManager.StartWaveSystem();
             }
         }
         

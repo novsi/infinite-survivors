@@ -245,8 +245,8 @@
         "Enemies take damage and die when hit"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added m_StarterWeapon field to TowerSurvivorsGameManager. Scene configured with CannonData.asset as starter weapon. WeaponManager.m_WeaponParent set to Tower transform. InitializeGameSystems() equips starter weapon on game start."
     },
     {
       "id": "US-016",
@@ -434,8 +434,8 @@
         "MainMenuUI displays loaded high scores"
       ],
       "priority": 27,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "HighScoreManager.cs already implemented with PlayerPrefs persistence. MainMenuUI displays Best Time in format MM:SS. High scores updated on game over. Game over UI and main menu properly display survival time stats."
     },
     {
       "id": "US-028",
@@ -516,8 +516,8 @@
         "Game runs smoothly with 30+ enemies on screen"
       ],
       "priority": 32,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Complete game loop verified. Fixed all manager references in scene. Added game state guards to GoldManager, WaveManager, UpgradeManager to prevent systems running during MainMenu. Fixed HUD visibility during different game states. Fixed MainMenuUI button text visibility. Added TowerHealth.Reset() and FullReset() for proper game restart. StarterCannon equips on game start. No console errors."
     }
   ]
 }

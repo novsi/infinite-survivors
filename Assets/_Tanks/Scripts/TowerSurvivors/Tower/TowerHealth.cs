@@ -124,6 +124,35 @@ namespace TowerSurvivors
             UpdateHealthUI();
             OnHealthChanged?.Invoke(m_CurrentHealth);
         }
+
+        /// <summary>
+        /// Resets the tower to full health and alive state.
+        /// Used when restarting the game.
+        /// </summary>
+        public void Reset()
+        {
+            m_CurrentHealth = m_MaxHealth;
+            m_IsDead = false;
+
+            // Re-enable visual components if they were disabled
+            gameObject.SetActive(true);
+
+            // Update UI
+            SetupHealthUI();
+            UpdateHealthUI();
+            OnHealthChanged?.Invoke(m_CurrentHealth);
+        }
+
+        /// <summary>
+        /// Resets max health to default value and heals to full.
+        /// Used when completely restarting the game.
+        /// </summary>
+        /// <param name="defaultMaxHealth">The default max health value to reset to</param>
+        public void FullReset(float defaultMaxHealth = 100f)
+        {
+            m_MaxHealth = defaultMaxHealth;
+            Reset();
+        }
         
         private void Die()
         {

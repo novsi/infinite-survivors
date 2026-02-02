@@ -88,6 +88,13 @@ namespace TowerSurvivors
         
         private void Update()
         {
+            // Only apply regeneration during Playing state
+            if (TowerSurvivorsGameManager.Instance == null ||
+                TowerSurvivorsGameManager.Instance.CurrentGameState != GameState.Playing)
+            {
+                return;
+            }
+
             // Apply health regeneration
             if (m_CachedHealthRegeneration > 0f && m_TowerHealth != null)
             {

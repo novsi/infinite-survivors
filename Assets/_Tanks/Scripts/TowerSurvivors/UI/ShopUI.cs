@@ -52,12 +52,16 @@ namespace TowerSurvivors
         {
             // Subscribe to events
             SubscribeToEvents();
-            
+
             // Initialize shop content
             InitializeShop();
-            
+
             // Set initial tab
             SwitchTab(ShopTab.Weapons);
+
+            // Set correct initial visibility based on current game state
+            GameState currentState = TowerSurvivorsGameManager.Instance?.CurrentGameState ?? GameState.MainMenu;
+            OnGameStateChanged(currentState);
         }
         
         private void FindManagerReferences()

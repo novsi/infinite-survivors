@@ -451,3 +451,59 @@ Started: Mon Feb  2 21:44:10 EET 2026
   - Percentage-based upgrades (IsPercentage=true) display as percentages and multiply effects in UpgradeManager
   - manage_scriptable_object create action works well for creating upgrade assets with all properties
 ---
+
+## 2026-02-02 - US-015, US-027, US-032 Final Polish and Integration Testing
+- What was implemented
+  - US-015: Equip Starter Cannon on Tower
+    - Added m_StarterWeapon field to TowerSurvivorsGameManager for configuring starter weapon
+    - Set CannonData.asset as m_StarterWeapon in scene
+    - Set WeaponManager.m_WeaponParent to Tower transform for proper weapon positioning
+    - Updated InitializeGameSystems() to equip starter weapon when game starts
+
+  - US-027: High Score Persistence
+    - HighScoreManager.cs already implemented with PlayerPrefs persistence
+    - MainMenuUI properly displays best survival time in MM:SS format
+    - High scores automatically update on game over when new record achieved
+
+  - US-032: Final Polish and Integration Testing
+    - Fixed all manager references in scene that were null:
+      - TowerSurvivorsGameManager: m_GoldManager, m_WaveManager, m_EnemySpawner, m_TowerHealth
+      - WaveManager: m_EnemySpawner, m_GoldManager
+      - EnemySpawner: m_TowerTransform
+      - UpgradeManager: m_GoldManager, m_TowerHealth, m_WeaponManager
+      - TowerHealth: m_ExplosionPrefab set to TankExplosion.prefab
+    - Added game state guards to prevent systems running during MainMenu:
+      - GoldManager.GeneratePassiveGold() - only runs during Playing
+      - WaveManager.Update() - only runs during Playing
+      - UpgradeManager.Update() - only runs during Playing (health regen)
+    - Fixed HUD visibility during different game states:
+      - Modified HUD.OnGameStateChanged() to hide/show individual text elements
+      - Added initial visibility check in HUD.InitializeUI()
+      - Wired up all HUD text references that were null
+    - Fixed MainMenuUI visibility:
+      - Changed ButtonText color from white to black for visibility
+    - Added TowerHealth.Reset() and FullReset() methods for game restart
+    - Verified no console errors during play mode
+    - Main menu displays correctly with visible "START GAME" button
+
+- Files changed
+  - Assets/_Tanks/Scripts/TowerSurvivors/Core/TowerSurvivorsGameManager.cs - added m_StarterWeapon, m_WeaponManager, m_UpgradeManager fields; updated InitializeGameSystems()
+  - Assets/_Tanks/Scripts/TowerSurvivors/Tower/TowerHealth.cs - added Reset() and FullReset() methods
+  - Assets/_Tanks/Scripts/TowerSurvivors/Economy/GoldManager.cs - added game state check in GeneratePassiveGold()
+  - Assets/_Tanks/Scripts/TowerSurvivors/Waves/WaveManager.cs - added game state check in Update()
+  - Assets/_Tanks/Scripts/TowerSurvivors/Economy/UpgradeManager.cs - added game state check in Update()
+  - Assets/_Tanks/Scripts/TowerSurvivors/UI/HUD.cs - modified OnGameStateChanged(), added initial visibility check
+  - Assets/_Tanks/Scripts/TowerSurvivors/UI/ShopUI.cs - added initial visibility check in Start()
+  - Assets/_Tanks/Scripts/TowerSurvivors/UI/WeaponInventoryUI.cs - added OnGameStateChanged handling, initial visibility check
+  - Assets/_Tanks/Scenes/TowerSurvivors.unity - wired all manager references, set starter weapon, fixed ButtonText color
+  - scripts/ralph/prd.json - marked US-015, US-027, US-032 as complete
+
+- **Learnings for future iterations:**
+  - Manager references often need to be wired manually in scene even when scripts have auto-find logic
+  - Game systems (gold gen, waves, upgrades) must check game state to prevent running during MainMenu
+  - HUD elements need individual visibility control - hiding the parent HUD doesn't hide children with separate references
+  - UI text color visibility is critical - white text on white button backgrounds is invisible
+  - TowerHealth needs explicit Reset methods for game restart (ResetGame flow)
+  - WeaponManager.m_WeaponParent must be set for weapons to spawn in correct position
+  - Use batch_execute with manage_components set_property and search_method="by_name" to wire references
+---
