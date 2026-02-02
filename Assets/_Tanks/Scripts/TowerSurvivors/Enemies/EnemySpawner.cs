@@ -56,49 +56,74 @@ namespace TowerSurvivors
             }
         }
         
+        // Scaling multipliers for current wave
+        private float m_CurrentHealthMultiplier = 1f;
+        private float m_CurrentDamageMultiplier = 1f;
+        private float m_CurrentSpeedMultiplier = 1f;
+
         public void SpawnWave(int enemyCount, GameObject enemyPrefab = null)
+        {
+            SpawnWaveWithScaling(enemyCount, enemyPrefab, 1f, 1f, 1f);
+        }
+
+        public void SpawnWaveWithScaling(int enemyCount, GameObject enemyPrefab, float healthMultiplier, float damageMultiplier, float speedMultiplier)
         {
             if (IsSpawning)
             {
                 Debug.LogWarning("Wave spawn already in progress!");
                 return;
             }
-            
+
+            // Store scaling multipliers
+            m_CurrentHealthMultiplier = healthMultiplier;
+            m_CurrentDamageMultiplier = damageMultiplier;
+            m_CurrentSpeedMultiplier = speedMultiplier;
+
             // Use first available prefab if none specified
             if (enemyPrefab == null && m_EnemyPrefabs.Count > 0)
             {
                 enemyPrefab = m_EnemyPrefabs[0];
             }
-            
+
             if (enemyPrefab == null)
             {
                 Debug.LogError("No enemy prefab specified for spawn wave!");
                 return;
             }
-            
+
             m_CurrentSpawnCoroutine = StartCoroutine(SpawnWaveCoroutine(enemyCount, enemyPrefab));
         }
         
         public void SpawnMixedWave(int enemyCount, List<GameObject> enemyTypes = null, List<int> enemyCounts = null)
+        {
+            SpawnMixedWaveWithScaling(enemyCount, enemyTypes, enemyCounts, 1f, 1f, 1f);
+        }
+
+        public void SpawnMixedWaveWithScaling(int enemyCount, List<GameObject> enemyTypes, List<int> enemyCounts, float healthMultiplier, float damageMultiplier, float speedMultiplier)
         {
             if (IsSpawning)
             {
                 Debug.LogWarning("Wave spawn already in progress!");
                 return;
             }
-            
+
+            // Store scaling multipliers
+            m_CurrentHealthMultiplier = healthMultiplier;
+            m_CurrentDamageMultiplier = damageMultiplier;
+            m_CurrentSpeedMultiplier = speedMultiplier;
+
             // Use default enemy prefabs if none specified
             if (enemyTypes == null || enemyTypes.Count == 0)
             {
                 enemyTypes = new List<GameObject>(m_EnemyPrefabs);
             }
-            
+
             if (enemyTypes.Count == 0)
             {
                 Debug.LogError("No enemy types available for mixed wave!");
                 return;
             }
-            
+
             m_CurrentSpawnCoroutine = StartCoroutine(SpawnMixedWaveCoroutine(enemyCount, enemyTypes, enemyCounts));
         }
         
@@ -166,31 +191,34 @@ namespace TowerSurvivors
         private void SpawnSingleEnemy(GameObject enemyPrefab)
         {
             Vector3 spawnPosition = GetRandomSpawnPosition();
-            
+
             // Instantiate enemy
             GameObject enemyInstance = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
-            
+
             // Get Enemy component and set it up
             Enemy enemyComponent = enemyInstance.GetComponent<Enemy>();
             if (enemyComponent != null)
             {
+                // Initialize enemy with scaling multipliers
+                enemyComponent.Initialize(m_CurrentHealthMultiplier, m_CurrentDamageMultiplier, m_CurrentSpeedMultiplier);
+
                 // Subscribe to enemy death event
                 enemyComponent.OnDeath.AddListener(OnEnemyDied);
-                
+
                 // Add to active enemies list
                 m_ActiveEnemies.Add(enemyComponent);
-                
+
                 // Face towards tower
                 if (m_TowerTransform != null)
                 {
                     Vector3 directionToTower = (m_TowerTransform.position - spawnPosition).normalized;
                     enemyInstance.transform.rotation = Quaternion.LookRotation(directionToTower);
                 }
-                
+
                 // Trigger spawn event
                 OnEnemySpawned?.Invoke(enemyComponent);
-                
-                Debug.Log($"Spawned {enemyPrefab.name} at {spawnPosition}");
+
+                Debug.Log($"Spawned {enemyPrefab.name} at {spawnPosition} (HP:{m_CurrentHealthMultiplier:F2}x DMG:{m_CurrentDamageMultiplier:F2}x SPD:{m_CurrentSpeedMultiplier:F2}x)");
             }
             else
             {

@@ -31,16 +31,20 @@ namespace TowerSurvivors
         
         // Cached values for performance
         private TowerHealth m_TowerHealth;
+        private bool m_IsInitialized;
+        private RangedEnemy m_RangedEnemy;
         
         public EnemyData EnemyData => m_EnemyData;
         public float CurrentHealth => m_CurrentHealth;
         public float MaxHealth => m_EnemyData != null ? m_EnemyData.MaxHealth * m_HealthMultiplier : 0f;
         public bool IsDead => m_IsDead;
+        public float DamageMultiplier => m_DamageMultiplier;
         
         private void Awake()
         {
             m_NavAgent = GetComponent<NavMeshAgent>();
-            
+            m_RangedEnemy = GetComponent<RangedEnemy>();
+
             // Initialize events
             OnDeath ??= new UnityEvent<float>();
             OnTakeDamage ??= new UnityEvent<float>();
@@ -48,7 +52,11 @@ namespace TowerSurvivors
         
         private void Start()
         {
-            Initialize();
+            // Only initialize with defaults if not already initialized by spawner
+            if (!m_IsInitialized)
+            {
+                Initialize();
+            }
         }
         
         private void Update()
@@ -66,27 +74,30 @@ namespace TowerSurvivors
                 Debug.LogError($"Enemy {gameObject.name} has no EnemyData assigned!");
                 return;
             }
-            
+
+            // Mark as initialized
+            m_IsInitialized = true;
+
             // Store scaling multipliers
             m_HealthMultiplier = healthMultiplier;
             m_DamageMultiplier = damageMultiplier;
             m_SpeedMultiplier = speedMultiplier;
-            
+
             // Initialize health
             m_CurrentHealth = MaxHealth;
             m_IsDead = false;
             m_LastAttackTime = 0f;
             m_PathUpdateTimer = 0f;
-            
+
             // Configure NavMeshAgent
             SetupNavAgent();
-            
+
             // Apply visual scaling
             if (m_EnemyData.Scale != Vector3.one)
             {
                 transform.localScale = m_EnemyData.Scale;
             }
-            
+
             // Find tower target
             FindTowerTarget();
         }
@@ -151,9 +162,18 @@ namespace TowerSurvivors
         {
             if (m_TowerHealth != null && !m_TowerHealth.IsDead)
             {
-                float damage = m_EnemyData.Damage * m_DamageMultiplier;
-                m_TowerHealth.TakeDamage(damage);
-                Debug.Log($"{gameObject.name} attacked tower for {damage} damage!");
+                // Check if this is a ranged enemy
+                if (m_RangedEnemy != null)
+                {
+                    m_RangedEnemy.FireProjectile();
+                }
+                else
+                {
+                    // Melee attack
+                    float damage = m_EnemyData.Damage * m_DamageMultiplier;
+                    m_TowerHealth.TakeDamage(damage);
+                    Debug.Log($"{gameObject.name} attacked tower for {damage} damage!");
+                }
             }
         }
         

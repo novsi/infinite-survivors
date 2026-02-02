@@ -384,3 +384,31 @@ Started: Mon Feb  2 21:44:10 EET 2026
   - ShopItemUI.Initialize() can accept optional WeaponManager to check initial owned status
   - m_FireRate is attacks per second, so 0.2s fire interval = 5 attacks/sec
 ---
+
+## 2026-02-02 - US-031 Add Weapon Inventory Display
+- What was implemented
+  - Created WeaponInventoryUI.cs in Assets/_Tanks/Scripts/TowerSurvivors/UI/
+    - Subscribes to WeaponManager.OnWeaponAdded and OnWeaponRemoved events
+    - Dynamically creates weapon slots for each equipped weapon
+    - Displays weapon icon (or rarity color if no icon) and weapon name
+    - Implements pulse/highlight effect when weapon fires (scale + color change)
+    - Supports scrolling via ScrollRect when more than 8 weapons equipped
+  - Created WeaponInventoryPanel in HUDCanvas on left side of screen
+    - ScrollRect for vertical scrolling
+    - Viewport with Mask for clipping
+    - Content with VerticalLayoutGroup and ContentSizeFitter for dynamic sizing
+  - Added WeaponManager component to Tower GameObject (was missing from scene)
+  - Configured all serialized references between UI components
+
+- Files changed
+  - Assets/_Tanks/Scripts/TowerSurvivors/UI/WeaponInventoryUI.cs - new UI script
+  - Assets/_Tanks/Scenes/TowerSurvivors.unity - added WeaponInventoryPanel with ScrollRect structure, added WeaponManager to Tower
+  - scripts/ralph/prd.json - marked US-031 as complete
+
+- **Learnings for future iterations:**
+  - WeaponManager was not on Tower in scene; needed to add component before wiring UI
+  - WeaponInventoryUI dynamically creates slots without needing a prefab (CreateSlotDynamically method)
+  - Weapon.OnFire event is used for pulse effect - subscribe with lambda to pass weapon reference
+  - ScrollRect setup requires: viewport with Mask, content with ContentSizeFitter (verticalFit=PreferredSize)
+  - For object references in manage_components set_property, use {"instanceID": id} format
+---

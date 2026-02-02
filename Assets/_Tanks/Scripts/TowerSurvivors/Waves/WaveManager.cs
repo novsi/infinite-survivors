@@ -19,9 +19,12 @@ namespace TowerSurvivors
     {
         [Header("Wave Settings")]
         [SerializeField] private float m_WaveDuration = 30f;                // Time between waves
-        [SerializeField] private int m_BaseEnemyCount = 5;                  // Starting enemy count
-        [SerializeField] private int m_EnemyCountIncrease = 3;              // Enemy count increase per wave
-        
+        [SerializeField] private int m_BaseEnemyCount = 5;                  // Starting enemy count (fallback)
+        [SerializeField] private int m_EnemyCountIncrease = 3;              // Enemy count increase per wave (fallback)
+
+        [Header("Wave Config")]
+        [SerializeField] private WaveConfig m_WaveConfig;                   // Configurable wave scaling
+
         [Header("Wave Progression")]
         [SerializeField] private float m_GoldGenerationIncrease = 1f;       // Gold/sec increase per wave
         
@@ -31,6 +34,8 @@ namespace TowerSurvivors
         [SerializeField] private int m_FastEnemyStartWave = 3;
         [SerializeField] private GameObject m_TankEnemyPrefab;              // Tank enemy (available from wave 5)
         [SerializeField] private int m_TankEnemyStartWave = 5;
+        [SerializeField] private GameObject m_RangedEnemyPrefab;            // Ranged enemy (available from wave 7)
+        [SerializeField] private int m_RangedEnemyStartWave = 7;
 
         [Header("Boss Waves")]
         [SerializeField] private int m_BossWaveInterval = 10;               // Boss every X waves
@@ -186,8 +191,21 @@ namespace TowerSurvivors
                 yield break;
             }
 
-            // Calculate total enemy count for this wave
-            int totalEnemyCount = m_BaseEnemyCount + ((m_CurrentWave - 1) * m_EnemyCountIncrease);
+            // Calculate total enemy count for this wave (use WaveConfig if available)
+            int totalEnemyCount;
+            if (m_WaveConfig != null)
+            {
+                totalEnemyCount = m_WaveConfig.GetEnemyCount(m_CurrentWave);
+            }
+            else
+            {
+                totalEnemyCount = m_BaseEnemyCount + ((m_CurrentWave - 1) * m_EnemyCountIncrease);
+            }
+
+            // Calculate scaling multipliers from WaveConfig
+            float healthMultiplier = m_WaveConfig != null ? m_WaveConfig.GetHealthMultiplier(m_CurrentWave) : 1f;
+            float damageMultiplier = m_WaveConfig != null ? m_WaveConfig.GetDamageMultiplier(m_CurrentWave) : 1f;
+            float speedMultiplier = m_WaveConfig != null ? m_WaveConfig.GetSpeedMultiplier(m_CurrentWave) : 1f;
 
             // Build enemy type distribution based on wave number
             List<GameObject> enemyTypes = new List<GameObject>();
@@ -197,9 +215,23 @@ namespace TowerSurvivors
             int basicCount = totalEnemyCount;
             int fastCount = 0;
             int tankCount = 0;
+            int rangedCount = 0;
+
+            // Determine start waves (use WaveConfig if available)
+            int fastStartWave = m_WaveConfig != null ? m_WaveConfig.FirstFastWave : m_FastEnemyStartWave;
+            int tankStartWave = m_WaveConfig != null ? m_WaveConfig.FirstTankWave : m_TankEnemyStartWave;
+            int rangedStartWave = m_WaveConfig != null ? m_WaveConfig.FirstRangedWave : m_RangedEnemyStartWave;
+
+            // Add ranged enemies starting at wave 7
+            if (m_CurrentWave >= rangedStartWave && m_RangedEnemyPrefab != null)
+            {
+                // Ranged enemies make up 15% of the wave
+                rangedCount = Mathf.Max(1, Mathf.RoundToInt(totalEnemyCount * 0.15f));
+                basicCount -= rangedCount;
+            }
 
             // Add fast enemies starting at wave 3
-            if (m_CurrentWave >= m_FastEnemyStartWave && m_FastEnemyPrefab != null)
+            if (m_CurrentWave >= fastStartWave && m_FastEnemyPrefab != null)
             {
                 // Fast enemies make up 30% of the wave
                 fastCount = Mathf.Max(1, Mathf.RoundToInt(totalEnemyCount * 0.3f));
@@ -207,7 +239,7 @@ namespace TowerSurvivors
             }
 
             // Add tank enemies starting at wave 5
-            if (m_CurrentWave >= m_TankEnemyStartWave && m_TankEnemyPrefab != null)
+            if (m_CurrentWave >= tankStartWave && m_TankEnemyPrefab != null)
             {
                 // Tank enemies make up 20% of the wave
                 tankCount = Mathf.Max(1, Mathf.RoundToInt(totalEnemyCount * 0.2f));
@@ -238,18 +270,25 @@ namespace TowerSurvivors
                 enemyCounts.Add(tankCount);
             }
 
-            // Spawn the mixed wave
+            // Add ranged enemies
+            if (m_RangedEnemyPrefab != null && rangedCount > 0)
+            {
+                enemyTypes.Add(m_RangedEnemyPrefab);
+                enemyCounts.Add(rangedCount);
+            }
+
+            // Spawn the mixed wave with scaling multipliers
             if (enemyTypes.Count > 0)
             {
-                m_EnemySpawner.SpawnMixedWave(totalEnemyCount, enemyTypes, enemyCounts);
+                m_EnemySpawner.SpawnMixedWaveWithScaling(totalEnemyCount, enemyTypes, enemyCounts, healthMultiplier, damageMultiplier, speedMultiplier);
             }
             else
             {
                 // Fallback to default spawner behavior
-                m_EnemySpawner.SpawnWave(totalEnemyCount);
+                m_EnemySpawner.SpawnWaveWithScaling(totalEnemyCount, null, healthMultiplier, damageMultiplier, speedMultiplier);
             }
 
-            Debug.Log($"Spawning wave {m_CurrentWave}: {basicCount} basic, {fastCount} fast, {tankCount} tank enemies");
+            Debug.Log($"Spawning wave {m_CurrentWave}: {basicCount} basic, {fastCount} fast, {tankCount} tank, {rangedCount} ranged enemies (HP:{healthMultiplier:F2}x DMG:{damageMultiplier:F2}x SPD:{speedMultiplier:F2}x)");
             yield break;
         }
         

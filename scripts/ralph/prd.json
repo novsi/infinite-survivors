@@ -498,7 +498,7 @@
         "Max 8 weapons visible, scrollable if more"
       ],
       "priority": 31,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
