@@ -1,3 +1,71 @@
 # Ralph Progress Log
 Started: Mon Feb  2 21:44:10 EET 2026
+
+## Codebase Patterns
+- Tower Survivors uses separate namespace `TowerSurvivors` to avoid conflicts with `Tanks.Complete`
+- Scripts follow Unity's private serialized field convention with `m_` prefix
+- All managers use UnityEvent system for decoupled communication
+- ScriptableObjects used for data-driven design (EnemyData, WeaponData)
+- Singleton pattern used for core managers (GoldManager, TowerSurvivorsGameManager)
+- Enemy and weapon systems support upgrade multipliers for progression
+---
+
+## 2026-02-02 21:45:00 - Multiple User Stories (US-002, US-004, US-006-009, US-011-013)
+- What was implemented
+  - Created complete script foundation for Tower Survivors game
+  - TowerHealth.cs: Tower health system with events and explosion handling
+  - Enemy.cs & EnemyData.cs: NavMesh pathfinding enemies with data-driven stats
+  - GoldManager.cs: Singleton gold economy with passive generation
+  - EnemySpawner.cs: Circular enemy spawning with wave support
+  - WaveManager.cs: 30-second wave progression with boss wave support
+  - TowerSurvivorsGameManager.cs: Central game state management with pause/resume
+  - WeaponData.cs & Weapon.cs: Comprehensive weapon system with auto-targeting
+  - WeaponManager.cs: Weapon tracking and upgrade multiplier system
+  - Projectile.cs: Advanced projectile with area damage, piercing, chain lightning
+
+- Files changed
+  - Created Assets/_Tanks/Scripts/TowerSurvivors/ directory structure
+  - 11 new C# scripts across Core/, Tower/, Enemies/, Economy/, Waves/, Weapons/ folders
+  - Updated scripts/ralph/prd.json to mark 9 user stories as completed
+
+- **Learnings for future iterations:**
+  - TowerSurvivors namespace prevents conflicts with existing Tanks.Complete code
+  - UnityEvent system provides clean decoupling between game systems
+  - ScriptableObjects are essential for data-driven weapon/enemy design
+  - Singleton pattern works well for core managers but requires proper cleanup
+  - Enemy and weapon upgrade multipliers allow for progressive difficulty/power
+  - Unity MCP tools are required for actual Unity asset creation (scenes, prefabs)
+  - Scripts compile correctly but Unity assets still need to be created via MCP
+---
+
+## 2026-02-02 22:15:00 - Multiple UI and System Scripts (US-017, US-018, US-021, US-025-028)
+- What was implemented
+  - Created comprehensive UI system for Tower Survivors
+  - GameOverUI.cs: Game over screen with stats display, restart/menu functionality
+  - HUD.cs: Real-time gameplay HUD with gold, wave, time, health, enemy count displays
+  - ShopUI.cs: Shop framework with weapon/upgrade tabs, affordability checking
+  - ShopItemUI.cs: Individual shop item component with purchase logic
+  - MainMenuUI.cs: Main menu with high score display, game controls
+  - PauseMenuUI.cs: Pause menu with stats, resume/quit functionality
+  - HighScoreManager.cs: Persistent high score tracking with PlayerPrefs
+  - UpgradeData.cs & UpgradeManager.cs: Complete upgrade system with stacking effects
+  - WaveConfig.cs: Comprehensive wave scaling configuration system
+
+- Files changed
+  - Created Assets/_Tanks/Scripts/TowerSurvivors/UI/ directory with 6 UI scripts
+  - Added HighScoreManager.cs to Core/ directory
+  - Added UpgradeData.cs and UpgradeManager.cs to Economy/ directory
+  - Added WaveConfig.cs to Waves/ directory
+  - Total: 10 new C# scripts (21 total TowerSurvivors scripts)
+
+- **Learnings for future iterations:**
+  - UI scripts designed to work with Unity MCP-created UI elements via serialized references
+  - All UI scripts use event-driven architecture for loose coupling with game systems
+  - HUD script properly handles property name mismatches with existing WaveManager (TimeToNextWave vs TimeUntilNextWave)
+  - Shop system designed for data-driven weapons using Resources.LoadAll<WeaponData>()
+  - UpgradeManager provides comprehensive stat multipliers for weapon and tower systems
+  - HighScoreManager uses PlayerPrefs for persistence with JSON export/import capability
+  - WaveConfig provides logarithmic and curve-based enemy scaling for balanced progression
+  - All scripts include comprehensive testing methods via [ContextMenu] attributes
+  - Script components are ready for Unity MCP integration when permissions are available
 ---
