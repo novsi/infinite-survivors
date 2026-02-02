@@ -242,8 +242,44 @@ namespace TowerSurvivors
                     float damage = m_EnemyData.Damage * m_DamageMultiplier;
                     towerHealth.TakeDamage(damage);
                     m_LastAttackTime = Time.time;
-                    
+
                     Debug.Log($"{gameObject.name} collided with tower for {damage} damage!");
+                }
+            }
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            // Handle trigger collision with tower
+            TowerHealth towerHealth = other.GetComponent<TowerHealth>();
+            if (towerHealth != null && !towerHealth.IsDead)
+            {
+                // Only attack if not on cooldown
+                if (Time.time >= m_LastAttackTime + m_EnemyData.AttackCooldown)
+                {
+                    float damage = m_EnemyData.Damage * m_DamageMultiplier;
+                    towerHealth.TakeDamage(damage);
+                    m_LastAttackTime = Time.time;
+
+                    Debug.Log($"{gameObject.name} triggered tower for {damage} damage!");
+                }
+            }
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            // Continuously attack while overlapping tower trigger
+            TowerHealth towerHealth = other.GetComponent<TowerHealth>();
+            if (towerHealth != null && !towerHealth.IsDead)
+            {
+                // Only attack if not on cooldown
+                if (Time.time >= m_LastAttackTime + m_EnemyData.AttackCooldown)
+                {
+                    float damage = m_EnemyData.Damage * m_DamageMultiplier;
+                    towerHealth.TakeDamage(damage);
+                    m_LastAttackTime = Time.time;
+
+                    Debug.Log($"{gameObject.name} trigger-attacking tower for {damage} damage!");
                 }
             }
         }

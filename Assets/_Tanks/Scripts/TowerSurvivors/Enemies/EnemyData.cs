@@ -12,11 +12,11 @@ namespace TowerSurvivors
         [SerializeField] private float m_GoldDrop = 5f;
         
         [Header("Combat Settings")]
-        [SerializeField] private float m_AttackRange = 1f;          // Range for melee attack
+        [SerializeField] private float m_AttackRange = 2.5f;        // Range for melee attack (must be >= StoppingDistance)
         [SerializeField] private float m_AttackCooldown = 1f;       // Time between attacks
-        
+
         [Header("AI Settings")]
-        [SerializeField] private float m_StoppingDistance = 1.5f;   // How close enemy gets to tower before stopping
+        [SerializeField] private float m_StoppingDistance = 2f;     // How close enemy gets to tower before stopping
         [SerializeField] private float m_PathUpdateRate = 0.2f;     // How often to recalculate path
         
         [Header("Visual")]

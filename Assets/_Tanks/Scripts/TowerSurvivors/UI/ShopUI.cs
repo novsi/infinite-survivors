@@ -94,10 +94,10 @@ namespace TowerSurvivors
         {
             // Load available weapons from Resources folder
             PopulateWeapons();
-            
-            // Load available upgrades (placeholder for now)
+
+            // Load available upgrades
             PopulateUpgrades();
-            
+
             // Update initial gold display
             OnGoldChanged(m_GoldManager?.CurrentGold ?? 0f);
         }
@@ -109,13 +109,13 @@ namespace TowerSurvivors
                 Debug.LogWarning("ShopUI: Missing references for weapons content or shop item prefab");
                 return;
             }
-            
+
             // Clear existing items
             ClearShopItems(m_WeaponShopItems);
-            
+
             // Load all WeaponData assets from Resources
             WeaponData[] weaponDataAssets = Resources.LoadAll<WeaponData>("WeaponData");
-            
+
             foreach (WeaponData weaponData in weaponDataAssets)
             {
                 CreateWeaponShopItem(weaponData);
