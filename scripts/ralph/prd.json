@@ -340,8 +340,8 @@
         "Script compiles without errors (verify via read_console)"
       ],
       "priority": 21,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "UpgradeData.cs and UpgradeManager.cs already existed with full implementations. Updated ShopUI.cs to load UpgradeData assets from Resources/UpgradeData/ folder and use UpgradeManager.PurchaseUpgrade() for purchases. Updated ShopItemUI.cs with Initialize(UpgradeData, Action, UpgradeManager) method for proper upgrade display with stack counts and scaling costs. Created 5 upgrade assets via Unity MCP: MaxHealthUpgrade.asset (Max HP +25, 100 gold, max 10 stacks), HPRegenUpgrade.asset (HP Regen +1/sec, 150 gold, max 5 stacks), GoldGenUpgrade.asset (Gold Gen +0.5/sec, 200 gold, max 5 stacks), DamageBoostUpgrade.asset (Damage +10%, 250 gold, max 10 stacks), AttackSpeedUpgrade.asset (Attack Speed +10%, 300 gold, max 10 stacks). Added UpgradeManager component to GameManagers. All scripts compile without errors."
     },
     {
       "id": "US-022",
@@ -450,7 +450,7 @@
         "Verify scaling works in play mode across multiple waves"
       ],
       "priority": 28,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -466,7 +466,7 @@
         "Add to shop weapon list"
       ],
       "priority": 29,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -482,7 +482,7 @@
         "Verify ranged enemies stop and shoot at tower"
       ],
       "priority": 30,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

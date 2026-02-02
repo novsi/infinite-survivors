@@ -23,6 +23,7 @@ namespace TowerSurvivors
         [Header("Manager References")]
         [SerializeField] private GoldManager m_GoldManager;
         [SerializeField] private WeaponManager m_WeaponManager;
+        [SerializeField] private UpgradeManager m_UpgradeManager;
         
         private List<ShopItemUI> m_WeaponShopItems = new List<ShopItemUI>();
         private List<ShopItemUI> m_UpgradeShopItems = new List<ShopItemUI>();
@@ -63,9 +64,12 @@ namespace TowerSurvivors
         {
             if (m_GoldManager == null)
                 m_GoldManager = FindObjectOfType<GoldManager>();
-            
+
             if (m_WeaponManager == null)
                 m_WeaponManager = FindObjectOfType<WeaponManager>();
+
+            if (m_UpgradeManager == null)
+                m_UpgradeManager = FindObjectOfType<UpgradeManager>();
         }
         
         private void SubscribeToEvents()
@@ -133,35 +137,45 @@ namespace TowerSurvivors
         
         private void PopulateUpgrades()
         {
-            if (m_UpgradesContent == null || m_ShopItemPrefab == null) return;
-            
+            if (m_UpgradesContent == null || m_ShopItemPrefab == null)
+            {
+                Debug.LogWarning("ShopUI: Missing references for upgrades content or shop item prefab");
+                return;
+            }
+
             // Clear existing items
             ClearShopItems(m_UpgradeShopItems);
-            
-            // TODO: Load upgrade data when UpgradeData and UpgradeManager are implemented
-            // For now, create placeholder upgrade items
-            CreatePlaceholderUpgrades();
-        }
-        
-        private void CreatePlaceholderUpgrades()
-        {
-            string[] upgradeNames = { "Max HP +25", "HP Regen +1/sec", "Gold Gen +0.5/sec", "Damage Boost +10%", "Attack Speed +10%" };
-            int[] upgradeCosts = { 100, 150, 200, 250, 300 };
-            
-            for (int i = 0; i < upgradeNames.Length; i++)
+
+            // Load all UpgradeData assets from Resources
+            UpgradeData[] upgradeDataAssets = Resources.LoadAll<UpgradeData>("UpgradeData");
+
+            if (upgradeDataAssets.Length == 0)
             {
-                GameObject shopItemObj = Instantiate(m_ShopItemPrefab, m_UpgradesContent);
-                ShopItemUI shopItemUI = shopItemObj.GetComponent<ShopItemUI>();
-                
-                if (shopItemUI == null)
-                {
-                    shopItemUI = shopItemObj.AddComponent<ShopItemUI>();
-                }
-                
-                // Setup placeholder upgrade
-                shopItemUI.InitializePlaceholderUpgrade(upgradeNames[i], upgradeCosts[i], OnUpgradePurchase);
-                m_UpgradeShopItems.Add(shopItemUI);
+                Debug.LogWarning("ShopUI: No UpgradeData assets found in Resources/UpgradeData folder");
+                return;
             }
+
+            foreach (UpgradeData upgradeData in upgradeDataAssets)
+            {
+                CreateUpgradeShopItem(upgradeData);
+            }
+        }
+
+        private void CreateUpgradeShopItem(UpgradeData upgradeData)
+        {
+            if (upgradeData == null) return;
+
+            GameObject shopItemObj = Instantiate(m_ShopItemPrefab, m_UpgradesContent);
+            ShopItemUI shopItemUI = shopItemObj.GetComponent<ShopItemUI>();
+
+            if (shopItemUI == null)
+            {
+                shopItemUI = shopItemObj.AddComponent<ShopItemUI>();
+            }
+
+            // Setup the shop item with UpgradeManager reference
+            shopItemUI.Initialize(upgradeData, OnUpgradeDataPurchase, m_UpgradeManager);
+            m_UpgradeShopItems.Add(shopItemUI);
         }
         
         private void ClearShopItems(List<ShopItemUI> itemList)
@@ -232,26 +246,57 @@ namespace TowerSurvivors
             }
         }
         
+        private void OnUpgradeDataPurchase(UpgradeData upgradeData)
+        {
+            if (m_UpgradeManager == null || upgradeData == null)
+            {
+                Debug.LogError("ShopUI: Missing UpgradeManager reference or UpgradeData for upgrade purchase");
+                return;
+            }
+
+            // UpgradeManager handles gold spending and upgrade application
+            bool success = m_UpgradeManager.PurchaseUpgrade(upgradeData);
+
+            if (success)
+            {
+                Debug.Log($"Purchased upgrade: {upgradeData.UpgradeName}");
+
+                // Refresh all upgrade items to update costs and stack counts
+                RefreshUpgradeItems();
+            }
+        }
+
+        private void RefreshUpgradeItems()
+        {
+            foreach (ShopItemUI upgradeItem in m_UpgradeShopItems)
+            {
+                if (upgradeItem != null)
+                {
+                    upgradeItem.RefreshUpgradeDisplay();
+                }
+            }
+        }
+
         private void OnUpgradePurchase(string upgradeName, int cost)
         {
+            // Legacy method for placeholder upgrades
             if (m_GoldManager == null)
             {
                 Debug.LogError("ShopUI: Missing GoldManager reference for upgrade purchase");
                 return;
             }
-            
+
             // Check if player can afford the upgrade
             if (!m_GoldManager.CanAfford(cost))
             {
                 Debug.Log($"Cannot afford {upgradeName} - costs {cost} gold");
                 return;
             }
-            
-            // Spend the gold (actual upgrade application will be handled by UpgradeManager when implemented)
+
+            // Spend the gold
             if (m_GoldManager.SpendGold(cost))
             {
                 Debug.Log($"Purchased upgrade: {upgradeName} for {cost} gold");
-                // TODO: Apply upgrade effect when UpgradeManager is implemented
             }
         }
         

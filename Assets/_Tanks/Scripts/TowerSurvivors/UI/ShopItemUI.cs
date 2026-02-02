@@ -21,14 +21,20 @@ namespace TowerSurvivors
         [SerializeField] private Color m_OwnedColor = Color.green;
         
         private WeaponData m_WeaponData;
+        private UpgradeData m_UpgradeData;
         private string m_UpgradeName;
         private int m_Cost;
         private bool m_IsWeapon;
+        private bool m_IsUpgrade;
         private bool m_IsAffordable;
         private bool m_IsOwned;
-        
+        private bool m_IsMaxed;
+        private int m_CurrentStacks;
+
         private Action<WeaponData> m_OnWeaponPurchase;
+        private Action<UpgradeData> m_OnUpgradeDataPurchase;
         private Action<string, int> m_OnUpgradePurchase;
+        private UpgradeManager m_UpgradeManager;
         
         private void Awake()
         {
@@ -85,13 +91,38 @@ namespace TowerSurvivors
             UpdateDisplay();
         }
         
+        public void Initialize(UpgradeData upgradeData, Action<UpgradeData> onPurchase, UpgradeManager upgradeManager)
+        {
+            if (upgradeData == null)
+            {
+                Debug.LogError("ShopItemUI: UpgradeData is null");
+                return;
+            }
+
+            m_UpgradeData = upgradeData;
+            m_OnUpgradeDataPurchase = onPurchase;
+            m_UpgradeManager = upgradeManager;
+            m_IsWeapon = false;
+            m_IsUpgrade = true;
+
+            // Get current stack count and cost
+            m_CurrentStacks = upgradeManager != null ? upgradeManager.GetUpgradeStackCount(upgradeData) : 0;
+            m_Cost = upgradeData.GetCostForPurchase(m_CurrentStacks + 1);
+
+            // Check if maxed out
+            m_IsMaxed = !upgradeData.UnlimitedStacks && m_CurrentStacks >= upgradeData.MaxStacks;
+
+            UpdateDisplay();
+        }
+
         public void InitializePlaceholderUpgrade(string upgradeName, int cost, Action<string, int> onPurchase)
         {
             m_UpgradeName = upgradeName;
             m_Cost = cost;
             m_OnUpgradePurchase = onPurchase;
             m_IsWeapon = false;
-            
+            m_IsUpgrade = false;
+
             UpdateDisplay();
         }
         
@@ -101,9 +132,51 @@ namespace TowerSurvivors
             {
                 UpdateWeaponDisplay();
             }
+            else if (m_IsUpgrade && m_UpgradeData != null)
+            {
+                UpdateUpgradeDataDisplay();
+            }
             else if (!m_IsWeapon && !string.IsNullOrEmpty(m_UpgradeName))
             {
                 UpdateUpgradeDisplay();
+            }
+        }
+
+        private void UpdateUpgradeDataDisplay()
+        {
+            // Display upgrade information from UpgradeData
+            if (m_NameText != null)
+            {
+                string stackInfo = m_UpgradeData.UnlimitedStacks ?
+                    $" ({m_CurrentStacks})" :
+                    $" ({m_CurrentStacks}/{m_UpgradeData.MaxStacks})";
+                m_NameText.text = m_UpgradeData.UpgradeName + stackInfo;
+            }
+
+            if (m_DescriptionText != null)
+            {
+                m_DescriptionText.text = m_UpgradeData.GetFormattedDescription(m_CurrentStacks);
+            }
+
+            if (m_CostText != null)
+            {
+                if (m_IsMaxed)
+                    m_CostText.text = "MAX";
+                else
+                    m_CostText.text = $"{m_Cost} Gold";
+            }
+
+            // Set icon if available
+            if (m_IconImage != null && m_UpgradeData.Icon != null)
+            {
+                m_IconImage.sprite = m_UpgradeData.Icon;
+                m_IconImage.gameObject.SetActive(true);
+            }
+            else if (m_IconImage != null)
+            {
+                // Use upgrade color as background if no icon
+                m_IconImage.color = m_UpgradeData.UpgradeColor;
+                m_IconImage.gameObject.SetActive(true);
             }
         }
         
@@ -194,13 +267,15 @@ namespace TowerSurvivors
             // Update button interactability
             if (m_BuyButton != null)
             {
-                m_BuyButton.interactable = m_IsAffordable && !m_IsOwned;
-                
+                m_BuyButton.interactable = m_IsAffordable && !m_IsOwned && !m_IsMaxed;
+
                 // Update button text
                 TextMeshProUGUI buttonText = m_BuyButton.GetComponentInChildren<TextMeshProUGUI>();
                 if (buttonText != null)
                 {
-                    if (m_IsOwned)
+                    if (m_IsMaxed)
+                        buttonText.text = "Maxed";
+                    else if (m_IsOwned)
                         buttonText.text = "Owned";
                     else if (m_IsAffordable)
                         buttonText.text = "Buy";
@@ -243,7 +318,7 @@ namespace TowerSurvivors
         
         private void OnBuyButtonClicked()
         {
-            if (!m_IsAffordable || m_IsOwned) return;
+            if (!m_IsAffordable || m_IsOwned || m_IsMaxed) return;
 
             if (m_IsWeapon && m_WeaponData != null)
             {
@@ -255,14 +330,30 @@ namespace TowerSurvivors
                     SetOwned(true);
                 }
             }
+            else if (m_IsUpgrade && m_UpgradeData != null)
+            {
+                m_OnUpgradeDataPurchase?.Invoke(m_UpgradeData);
+
+                // Refresh display after purchase to update stack count and cost
+                RefreshUpgradeDisplay();
+            }
             else if (!m_IsWeapon && !string.IsNullOrEmpty(m_UpgradeName))
             {
                 m_OnUpgradePurchase?.Invoke(m_UpgradeName, m_Cost);
-                
-                // For upgrades that can be purchased multiple times,
-                // we don't mark as owned but could increase cost here
-                // TODO: Implement upgrade stacking and cost scaling
             }
+        }
+
+        public void RefreshUpgradeDisplay()
+        {
+            if (!m_IsUpgrade || m_UpgradeData == null || m_UpgradeManager == null) return;
+
+            // Update stack count and cost
+            m_CurrentStacks = m_UpgradeManager.GetUpgradeStackCount(m_UpgradeData);
+            m_Cost = m_UpgradeData.GetCostForPurchase(m_CurrentStacks + 1);
+            m_IsMaxed = !m_UpgradeData.UnlimitedStacks && m_CurrentStacks >= m_UpgradeData.MaxStacks;
+
+            UpdateDisplay();
+            UpdateVisuals();
         }
         
         // Public method for testing

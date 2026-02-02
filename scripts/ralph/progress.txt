@@ -412,3 +412,42 @@ Started: Mon Feb  2 21:44:10 EET 2026
   - ScrollRect setup requires: viewport with Mask, content with ContentSizeFitter (verticalFit=PreferredSize)
   - For object references in manage_components set_property, use {"instanceID": id} format
 ---
+
+## 2026-02-02 - US-021 Create UpgradeManager and Upgrade Shop Items
+- What was implemented
+  - UpgradeData.cs and UpgradeManager.cs already existed with full implementations from previous work
+  - Updated ShopUI.cs to load UpgradeData assets from Resources/UpgradeData/ folder using Resources.LoadAll<UpgradeData>()
+  - Added OnUpgradeDataPurchase() method that uses UpgradeManager.PurchaseUpgrade() for proper upgrade handling
+  - Added UpgradeManager reference to ShopUI with auto-find in FindManagerReferences()
+  - Updated ShopItemUI.cs with Initialize(UpgradeData, Action<UpgradeData>, UpgradeManager) overload
+  - ShopItemUI now displays stack counts (current/max), scaling costs, and maxed status
+  - ShopItemUI.RefreshUpgradeDisplay() updates display after purchase for stacking upgrades
+  - Created 5 upgrade assets via Unity MCP in Assets/Resources/UpgradeData/:
+    - MaxHealthUpgrade.asset: Max HP +25, 100 base cost, 1.5x cost multiplier, max 10 stacks
+    - HPRegenUpgrade.asset: HP Regen +1/sec, 150 base cost, 1.75x cost multiplier, max 5 stacks
+    - GoldGenUpgrade.asset: Gold Gen +0.5/sec, 200 base cost, 2x cost multiplier, max 5 stacks
+    - DamageBoostUpgrade.asset: Damage +10% (multiplicative), 250 base cost, 1.5x multiplier, max 10 stacks
+    - AttackSpeedUpgrade.asset: Attack Speed +10% (multiplicative), 300 base cost, 1.5x multiplier, max 10 stacks
+  - Added UpgradeManager component to GameManagers GameObject in scene
+  - Saved scene to persist changes
+
+- Files changed
+  - Assets/_Tanks/Scripts/TowerSurvivors/UI/ShopUI.cs - added UpgradeManager reference, updated PopulateUpgrades(), added OnUpgradeDataPurchase()
+  - Assets/_Tanks/Scripts/TowerSurvivors/UI/ShopItemUI.cs - added Initialize() overload for UpgradeData, added RefreshUpgradeDisplay(), updated visuals for maxed status
+  - Assets/Resources/UpgradeData/ - new folder
+  - Assets/Resources/UpgradeData/MaxHealthUpgrade.asset - new UpgradeData asset
+  - Assets/Resources/UpgradeData/HPRegenUpgrade.asset - new UpgradeData asset
+  - Assets/Resources/UpgradeData/GoldGenUpgrade.asset - new UpgradeData asset
+  - Assets/Resources/UpgradeData/DamageBoostUpgrade.asset - new UpgradeData asset
+  - Assets/Resources/UpgradeData/AttackSpeedUpgrade.asset - new UpgradeData asset
+  - Assets/_Tanks/Scenes/TowerSurvivors.unity - added UpgradeManager component to GameManagers
+  - scripts/ralph/prd.json - marked US-021 as complete
+
+- **Learnings for future iterations:**
+  - Upgrade assets must be in Assets/Resources/UpgradeData/ for Resources.LoadAll<UpgradeData>("UpgradeData") to find them
+  - UpgradeManager.PurchaseUpgrade() handles gold spending, stack tracking, and effect application automatically
+  - ShopItemUI needs RefreshUpgradeDisplay() to update cost and stack count after each purchase
+  - UpgradeType enum uses integers: 0=MaxHealth, 1=HealthRegeneration, 2=GoldGeneration, 3=DamageMultiplier, 4=AttackSpeedMultiplier
+  - Percentage-based upgrades (IsPercentage=true) display as percentages and multiply effects in UpgradeManager
+  - manage_scriptable_object create action works well for creating upgrade assets with all properties
+---
