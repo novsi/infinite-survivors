@@ -63,19 +63,25 @@ namespace TowerSurvivors
                 m_BackgroundImage = GetComponent<Image>();
         }
         
-        public void Initialize(WeaponData weaponData, Action<WeaponData> onPurchase)
+        public void Initialize(WeaponData weaponData, Action<WeaponData> onPurchase, WeaponManager weaponManager = null)
         {
             if (weaponData == null)
             {
                 Debug.LogError("ShopItemUI: WeaponData is null");
                 return;
             }
-            
+
             m_WeaponData = weaponData;
             m_OnWeaponPurchase = onPurchase;
             m_IsWeapon = true;
             m_Cost = (int)weaponData.Cost;
-            
+
+            // Check if weapon is already owned (for non-multiple weapons)
+            if (weaponManager != null && !weaponData.AllowMultiple && weaponManager.GetWeaponCount(weaponData) > 0)
+            {
+                m_IsOwned = true;
+            }
+
             UpdateDisplay();
         }
         
@@ -238,14 +244,16 @@ namespace TowerSurvivors
         private void OnBuyButtonClicked()
         {
             if (!m_IsAffordable || m_IsOwned) return;
-            
+
             if (m_IsWeapon && m_WeaponData != null)
             {
                 m_OnWeaponPurchase?.Invoke(m_WeaponData);
-                
-                // For weapons that can only be bought once, mark as owned
-                // (This behavior could be customized based on game design)
-                SetOwned(true);
+
+                // Only mark as owned if weapon doesn't allow multiple purchases
+                if (!m_WeaponData.AllowMultiple)
+                {
+                    SetOwned(true);
+                }
             }
             else if (!m_IsWeapon && !string.IsNullOrEmpty(m_UpgradeName))
             {

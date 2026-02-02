@@ -309,8 +309,8 @@
         "Create Mortar.prefab with arcing projectile behavior"
       ],
       "priority": 19,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created all three weapons in Assets/Resources/WeaponData/ and Assets/_Tanks/Prefabs/TowerSurvivors/Weapons/. MachineGunData.asset (5 dmg, 5 attacks/sec, 12 range, Common, 75 gold) with MachineGunProjectile.prefab. LaserData.asset (20 dmg, 0.5 attacks/sec, 20 range, Uncommon, 200 gold, piercing 5 targets) with LineRenderer on Laser.prefab for beam effect. MortarData.asset (30 dmg, 0.333 attacks/sec, 25 range, Rare, 350 gold, 5 unit AoE explosive) with MortarProjectile.prefab. Also copied CannonData.asset to Resources/WeaponData for shop visibility."
     },
     {
       "id": "US-020",
@@ -324,8 +324,8 @@
         "Enter play mode: verify purchasing weapon deducts gold and weapon fires"
       ],
       "priority": 20,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "ShopUI.PopulateWeapons() uses Resources.LoadAll<WeaponData>('WeaponData') to load all weapons from Assets/Resources/WeaponData/. ShopUI.OnWeaponPurchase() calls GoldManager.SpendGold() and WeaponManager.AddWeapon(). WeaponManager creates weapons that auto-target and fire via Weapon.Update(). Updated ShopItemUI to check AllowMultiple - weapons with AllowMultiple=false show 'Owned' after purchase, weapons with AllowMultiple=true can be purchased multiple times. ShopItemUI.Initialize() now accepts WeaponManager reference to check initial owned status."
     },
     {
       "id": "US-021",
@@ -402,8 +402,8 @@
         "Menu visible when GameState is MainMenu, hidden during Playing"
       ],
       "priority": 25,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created MainMenuPanel in HUDCanvas with full-screen dark overlay. Added GameTitleText displaying 'TOWER SURVIVORS' (72pt), StartGameButton calling TowerSurvivorsGameManager.StartGame(), HighScorePanel with BestSurvivalTimeText, BestWaveReachedText, TotalEnemiesKilledText. MainMenuUI.cs subscribes to OnGameStateChanged and shows/hides panel based on GameState.MainMenu. GameManager initialState set to MainMenu."
     },
     {
       "id": "US-026",
@@ -418,8 +418,8 @@
         "Script compiles without errors (verify via read_console)"
       ],
       "priority": 26,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created PauseMenuPanel in HUDCanvas with semi-transparent overlay. Added PauseTitleText 'GAME PAUSED', ResumeButton, QuitToMenuButton, GameStatsPanel with current wave/time/kills/gold. PauseMenuUI.cs handles ESC key toggle, subscribes to OnGameStateChanged for show/hide. TowerSurvivorsGameManager.PauseGame() sets Time.timeScale=0, ResumeGame() sets Time.timeScale=1. Panel initially inactive, shows on GameState.Paused. No compilation errors."
     },
     {
       "id": "US-027",

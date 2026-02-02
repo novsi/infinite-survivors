@@ -302,3 +302,85 @@ Started: Mon Feb  2 21:44:10 EET 2026
   - Scene must be saved after NavMesh baking to persist the NavMesh data
   - NavMesh errors ("SetDestination" can only be called on active agent on NavMesh) indicate missing or unbaked NavMesh
 ---
+
+## 2026-02-02 - US-025, US-026 Create Main Menu and Pause Menu UI
+- What was implemented
+  - US-025: Created MainMenuPanel UI in HUDCanvas
+    - Full-screen dark overlay (0.1, 0.1, 0.15, 0.95 color)
+    - GameTitleText displaying "TOWER SURVIVORS" at 72pt font
+    - StartGameButton that calls TowerSurvivorsGameManager.StartGame()
+    - HighScorePanel with BestSurvivalTimeText, BestWaveReachedText, TotalEnemiesKilledText
+    - MainMenuUI component wired up with all serialized references
+    - Panel visible when GameState.MainMenu, hidden otherwise
+
+  - US-026: Created PauseMenuPanel UI in HUDCanvas
+    - Full-screen semi-transparent overlay (0, 0, 0, 0.85 color)
+    - PauseTitleText displaying "GAME PAUSED" at 48pt font
+    - ResumeButton and QuitToMenuButton with text children
+    - GameStatsPanel showing current wave, time, kills, gold
+    - PauseMenuUI component wired up with all serialized references
+    - Panel initially inactive, shows when GameState.Paused
+    - ESC key toggles pause via TowerSurvivorsGameManager
+
+  - Added HighScoreManager component to GameManagers GameObject
+  - Set TowerSurvivorsGameManager initial state to MainMenu
+
+- Files changed
+  - Assets/_Tanks/Scenes/TowerSurvivors.unity - added MainMenuPanel, PauseMenuPanel with all children
+  - scripts/ralph/prd.json - marked US-025 and US-026 as complete
+
+- **Learnings for future iterations:**
+  - Unity MCP batch_execute efficiently creates multiple UI elements in one call
+  - RectTransform anchor-based positioning: anchorMin/anchorMax for relative positioning, offsetMin/offsetMax for edge offsets
+  - TMP text alignment uses integer values: 514 = MiddleCenter, 257 = TopLeft, 258 = TopCenter
+  - manage_components set_property with {"instanceID": id} format for object references on scene instances
+  - GameState enum: 0=MainMenu, 1=Playing, 2=Paused, 3=GameOver
+  - UI panels under Canvas automatically get RectTransform instead of Transform
+---
+
+## 2026-02-02 - US-019, US-020 Create Additional Weapons and Wire Shop
+- What was implemented
+  - US-019: Created three new weapons for the shop system
+    - MachineGunData.asset: 5 damage, 5 attacks/sec (0.2s interval), 12 range, Common, 75 gold
+    - MachineGun.prefab with Weapon component and MachineGunProjectile.prefab
+    - LaserData.asset: 20 damage, 0.5 attacks/sec (2s interval), 20 range, Uncommon, 200 gold, piercing 5 targets
+    - Laser.prefab with Weapon component and LineRenderer for beam effect (instant hit, no projectile)
+    - MortarData.asset: 30 damage, 0.333 attacks/sec (3s interval), 25 range, Rare, 350 gold, 5 unit AoE explosive
+    - Mortar.prefab with Weapon component and MortarProjectile.prefab
+    - Copied CannonData.asset to Resources/WeaponData so starter weapon shows in shop
+
+  - US-020: Wired shop system to weapon purchasing
+    - ShopUI.PopulateWeapons() already uses Resources.LoadAll<WeaponData>("WeaponData") to load weapons
+    - Created Assets/Resources/WeaponData/ folder structure for shop weapon loading
+    - ShopUI.OnWeaponPurchase() calls GoldManager.SpendGold() and WeaponManager.AddWeapon()
+    - WeaponManager.AddWeapon() creates weapon instances that auto-target and fire via Weapon.Update()
+    - Updated ShopItemUI.OnBuyButtonClicked() to check AllowMultiple before setting Owned status
+    - Updated ShopItemUI.Initialize() to accept WeaponManager reference for initial owned status check
+    - Weapons with AllowMultiple=false show "Owned" after first purchase
+    - Weapons with AllowMultiple=true can be purchased multiple times (duplicates)
+
+- Files changed
+  - Assets/Resources/WeaponData/ - new folder for shop weapon data loading
+  - Assets/Resources/WeaponData/MachineGunData.asset - new WeaponData asset
+  - Assets/Resources/WeaponData/LaserData.asset - new WeaponData asset (piercing)
+  - Assets/Resources/WeaponData/MortarData.asset - new WeaponData asset (AoE)
+  - Assets/Resources/WeaponData/CannonData.asset - copied from ScriptableObjects folder
+  - Assets/_Tanks/Prefabs/TowerSurvivors/Weapons/MachineGun.prefab - new weapon prefab
+  - Assets/_Tanks/Prefabs/TowerSurvivors/Weapons/MachineGunProjectile.prefab - new projectile prefab
+  - Assets/_Tanks/Prefabs/TowerSurvivors/Weapons/Laser.prefab - new weapon prefab with LineRenderer
+  - Assets/_Tanks/Prefabs/TowerSurvivors/Weapons/Mortar.prefab - new weapon prefab
+  - Assets/_Tanks/Prefabs/TowerSurvivors/Weapons/MortarProjectile.prefab - new projectile prefab
+  - Assets/_Tanks/Scripts/TowerSurvivors/UI/ShopItemUI.cs - updated for AllowMultiple and owned status
+  - Assets/_Tanks/Scripts/TowerSurvivors/UI/ShopUI.cs - passes WeaponManager reference to ShopItemUI
+  - scripts/ralph/prd.json - marked US-019 and US-020 as complete
+
+- **Learnings for future iterations:**
+  - Weapon data assets must be in Assets/Resources/WeaponData/ for Resources.LoadAll to find them
+  - manage_scriptable_object patches with string path values work for object references (use "Assets/..." format)
+  - For prefab component modifications: instantiate in scene, modify via manage_components, save back with manage_prefabs create_from_gameobject allow_overwrite=true
+  - Laser weapons use instant hit (no projectile) via Weapon.FireInstantHit() when ProjectilePrefab is null
+  - LineRenderer component provides visual beam effect for laser-type weapons
+  - WeaponData.AllowMultiple controls whether shop shows "Owned" or allows duplicates
+  - ShopItemUI.Initialize() can accept optional WeaponManager to check initial owned status
+  - m_FireRate is attacks per second, so 0.2s fire interval = 5 attacks/sec
+---

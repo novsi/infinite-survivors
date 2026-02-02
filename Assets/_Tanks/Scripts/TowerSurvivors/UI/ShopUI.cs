@@ -117,17 +117,17 @@ namespace TowerSurvivors
         private void CreateWeaponShopItem(WeaponData weaponData)
         {
             if (weaponData == null) return;
-            
+
             GameObject shopItemObj = Instantiate(m_ShopItemPrefab, m_WeaponsContent);
             ShopItemUI shopItemUI = shopItemObj.GetComponent<ShopItemUI>();
-            
+
             if (shopItemUI == null)
             {
                 shopItemUI = shopItemObj.AddComponent<ShopItemUI>();
             }
-            
-            // Setup the shop item
-            shopItemUI.Initialize(weaponData, OnWeaponPurchase);
+
+            // Setup the shop item with WeaponManager reference for owned status checking
+            shopItemUI.Initialize(weaponData, OnWeaponPurchase, m_WeaponManager);
             m_WeaponShopItems.Add(shopItemUI);
         }
         
