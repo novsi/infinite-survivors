@@ -25,10 +25,19 @@ namespace TowerSurvivors
         [Header("Wave Progression")]
         [SerializeField] private float m_GoldGenerationIncrease = 1f;       // Gold/sec increase per wave
         
+        [Header("Enemy Types")]
+        [SerializeField] private GameObject m_BasicEnemyPrefab;             // Basic enemy (available from wave 1)
+        [SerializeField] private GameObject m_FastEnemyPrefab;              // Fast enemy (available from wave 3)
+        [SerializeField] private int m_FastEnemyStartWave = 3;
+        [SerializeField] private GameObject m_TankEnemyPrefab;              // Tank enemy (available from wave 5)
+        [SerializeField] private int m_TankEnemyStartWave = 5;
+
         [Header("Boss Waves")]
         [SerializeField] private int m_BossWaveInterval = 10;               // Boss every X waves
         [SerializeField] private GameObject m_BossPrefab;
-        
+        [SerializeField] private float m_BossHPScalePerAppearance = 100f;   // Additional HP per boss appearance
+        [SerializeField] private float m_BossGoldScalePerAppearance = 50f;  // Additional gold per boss appearance
+
         [Header("References")]
         [SerializeField] private EnemySpawner m_EnemySpawner;
         [SerializeField] private GoldManager m_GoldManager;
@@ -38,6 +47,7 @@ namespace TowerSurvivors
         public UnityEvent<int> OnWaveCompleted;         // Event when wave completes (wave number)
         public UnityEvent<float> OnWaveTimerUpdate;     // Event for wave timer updates (time remaining)
         public UnityEvent OnAllEnemiesCleared;          // Event when all enemies in wave are defeated
+        public UnityEvent<int> OnBossSpawned;           // Event when boss spawns (boss appearance number)
         
         private int m_CurrentWave;
         private float m_WaveTimer;
@@ -57,6 +67,7 @@ namespace TowerSurvivors
             OnWaveCompleted ??= new UnityEvent<int>();
             OnWaveTimerUpdate ??= new UnityEvent<float>();
             OnAllEnemiesCleared ??= new UnityEvent();
+            OnBossSpawned ??= new UnityEvent<int>();
             
             // Find references if not assigned
             if (m_EnemySpawner == null)
@@ -174,14 +185,72 @@ namespace TowerSurvivors
                 Debug.LogError("No EnemySpawner assigned to WaveManager!");
                 yield break;
             }
-            
-            // Calculate enemy count for this wave
-            int enemyCount = m_BaseEnemyCount + ((m_CurrentWave - 1) * m_EnemyCountIncrease);
-            
-            // For now, spawn basic enemies (this can be expanded for enemy variety)
-            m_EnemySpawner.SpawnWave(enemyCount);
-            
-            Debug.Log($"Spawning normal wave {m_CurrentWave} with {enemyCount} enemies");
+
+            // Calculate total enemy count for this wave
+            int totalEnemyCount = m_BaseEnemyCount + ((m_CurrentWave - 1) * m_EnemyCountIncrease);
+
+            // Build enemy type distribution based on wave number
+            List<GameObject> enemyTypes = new List<GameObject>();
+            List<int> enemyCounts = new List<int>();
+
+            // Calculate how many of each type to spawn
+            int basicCount = totalEnemyCount;
+            int fastCount = 0;
+            int tankCount = 0;
+
+            // Add fast enemies starting at wave 3
+            if (m_CurrentWave >= m_FastEnemyStartWave && m_FastEnemyPrefab != null)
+            {
+                // Fast enemies make up 30% of the wave
+                fastCount = Mathf.Max(1, Mathf.RoundToInt(totalEnemyCount * 0.3f));
+                basicCount -= fastCount;
+            }
+
+            // Add tank enemies starting at wave 5
+            if (m_CurrentWave >= m_TankEnemyStartWave && m_TankEnemyPrefab != null)
+            {
+                // Tank enemies make up 20% of the wave
+                tankCount = Mathf.Max(1, Mathf.RoundToInt(totalEnemyCount * 0.2f));
+                basicCount -= tankCount;
+            }
+
+            // Ensure at least some basic enemies
+            basicCount = Mathf.Max(1, basicCount);
+
+            // Add basic enemies
+            if (m_BasicEnemyPrefab != null && basicCount > 0)
+            {
+                enemyTypes.Add(m_BasicEnemyPrefab);
+                enemyCounts.Add(basicCount);
+            }
+
+            // Add fast enemies
+            if (m_FastEnemyPrefab != null && fastCount > 0)
+            {
+                enemyTypes.Add(m_FastEnemyPrefab);
+                enemyCounts.Add(fastCount);
+            }
+
+            // Add tank enemies
+            if (m_TankEnemyPrefab != null && tankCount > 0)
+            {
+                enemyTypes.Add(m_TankEnemyPrefab);
+                enemyCounts.Add(tankCount);
+            }
+
+            // Spawn the mixed wave
+            if (enemyTypes.Count > 0)
+            {
+                m_EnemySpawner.SpawnMixedWave(totalEnemyCount, enemyTypes, enemyCounts);
+            }
+            else
+            {
+                // Fallback to default spawner behavior
+                m_EnemySpawner.SpawnWave(totalEnemyCount);
+            }
+
+            Debug.Log($"Spawning wave {m_CurrentWave}: {basicCount} basic, {fastCount} fast, {tankCount} tank enemies");
+            yield break;
         }
         
         private IEnumerator SpawnBossWave()
@@ -191,20 +260,93 @@ namespace TowerSurvivors
                 Debug.LogError("Cannot spawn boss wave - missing EnemySpawner or BossPrefab!");
                 yield break;
             }
-            
+
+            // Calculate which boss appearance this is (1st, 2nd, 3rd, etc.)
+            int bossAppearance = m_CurrentWave / m_BossWaveInterval;
+
+            // Trigger boss spawn event for UI effects (screen shake, warning text, etc.)
+            OnBossSpawned?.Invoke(bossAppearance);
+
+            // Brief delay for warning to display
+            yield return new WaitForSeconds(1f);
+
             // Boss waves spawn fewer regular enemies + boss
             int regularEnemyCount = Mathf.Max(2, m_BaseEnemyCount / 2);
-            
-            // Spawn regular enemies first
-            m_EnemySpawner.SpawnWave(regularEnemyCount);
-            
+
+            // Spawn regular enemies first (use mixed wave if enemy types available)
+            if (m_BasicEnemyPrefab != null)
+            {
+                m_EnemySpawner.SpawnWave(regularEnemyCount, m_BasicEnemyPrefab);
+            }
+            else
+            {
+                m_EnemySpawner.SpawnWave(regularEnemyCount);
+            }
+
             // Wait a bit, then spawn the boss
             yield return new WaitForSeconds(2f);
-            
-            // Spawn boss (for now, treat as single enemy spawn)
-            m_EnemySpawner.SpawnWave(1, m_BossPrefab);
-            
-            Debug.Log($"Spawning boss wave {m_CurrentWave} with {regularEnemyCount} enemies + 1 boss");
+
+            // Spawn boss with scaling
+            SpawnScaledBoss(bossAppearance);
+
+            Debug.Log($"Spawning boss wave {m_CurrentWave} (Boss #{bossAppearance}) with {regularEnemyCount} enemies + 1 scaled boss");
+        }
+
+        private void SpawnScaledBoss(int bossAppearance)
+        {
+            if (m_BossPrefab == null || m_EnemySpawner == null) return;
+
+            // Calculate scaling multipliers based on boss appearance
+            // HP scales by +100 per appearance (applied as a multiplier to base HP)
+            // Gold scales by +50 per appearance
+            float hpMultiplier = 1f + ((bossAppearance - 1) * m_BossHPScalePerAppearance / 500f); // 500 is base boss HP
+            float damageMultiplier = 1f;
+            float speedMultiplier = 1f;
+
+            // Get spawn position
+            Vector3 spawnPosition = GetBossSpawnPosition();
+
+            // Instantiate boss
+            GameObject bossInstance = Instantiate(m_BossPrefab, spawnPosition, Quaternion.identity);
+            Enemy bossEnemy = bossInstance.GetComponent<Enemy>();
+
+            if (bossEnemy != null)
+            {
+                // Initialize with scaling
+                bossEnemy.Initialize(hpMultiplier, damageMultiplier, speedMultiplier);
+
+                // Register with spawner for tracking (needed for wave completion detection)
+                m_EnemySpawner.RegisterEnemy(bossEnemy);
+
+                // Subscribe to death event for scaled gold reward
+                float scaledGold = 100f + ((bossAppearance - 1) * m_BossGoldScalePerAppearance);
+                bossEnemy.OnDeath.AddListener((baseGold) => OnBossDeath(scaledGold));
+
+                Debug.Log($"Boss #{bossAppearance} spawned with {hpMultiplier:F2}x HP, will drop {scaledGold} gold");
+            }
+        }
+
+        private Vector3 GetBossSpawnPosition()
+        {
+            // Spawn boss at a fixed position away from the tower
+            TowerHealth tower = FindObjectOfType<TowerHealth>();
+            if (tower != null)
+            {
+                // Spawn 30 units away from tower in a random direction
+                float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+                return tower.transform.position + new Vector3(Mathf.Cos(angle) * 30f, 0f, Mathf.Sin(angle) * 30f);
+            }
+            return Vector3.zero;
+        }
+
+        private void OnBossDeath(float scaledGold)
+        {
+            // Award scaled gold to player
+            if (m_GoldManager != null)
+            {
+                m_GoldManager.AddGold(scaledGold);
+                Debug.Log($"Boss defeated! Awarded {scaledGold} gold");
+            }
         }
         
         private void CompleteWave()

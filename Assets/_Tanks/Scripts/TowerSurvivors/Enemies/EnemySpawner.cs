@@ -271,6 +271,19 @@ namespace TowerSurvivors
         {
             m_SpawnDelayBetweenEnemies = Mathf.Max(0f, delay);
         }
+
+        /// <summary>
+        /// Register an externally spawned enemy with the spawner for tracking.
+        /// Used for boss enemies spawned with custom initialization.
+        /// </summary>
+        public void RegisterEnemy(Enemy enemy)
+        {
+            if (enemy == null || m_ActiveEnemies.Contains(enemy)) return;
+
+            enemy.OnDeath.AddListener(OnEnemyDied);
+            m_ActiveEnemies.Add(enemy);
+            OnEnemySpawned?.Invoke(enemy);
+        }
         
         private void OnDrawGizmosSelected()
         {

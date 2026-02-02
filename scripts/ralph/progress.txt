@@ -11,6 +11,11 @@ Started: Mon Feb  2 21:44:10 EET 2026
 - TowerSurvivors.unity scene already exists with proper setup (ground, lighting, camera, NavMesh)
 - Tank.prefab at Assets/_Tanks/Prefabs/Tanks/Tank.prefab is the base for Tower prefab creation
 - TowerHealth.cs and WeaponManager.cs are fully implemented and ready for prefab integration
+- Unity MCP manage_scriptable_object with patches works well for creating EnemyData/WeaponData assets
+- For prefab component modifications, use editor scripts when manage_prefabs modify_contents doesn't apply changes
+- manage_components set_property uses {"guid": "..."} format for object references on scene instances
+- WaveManager uses mixed wave spawning with percentage-based enemy type distribution
+- Boss scaling uses appearance count (currentWave / interval) for progressive difficulty
 ---
 
 ## 2026-02-02 21:45:00 - Multiple User Stories (US-002, US-004, US-006-009, US-011-013)
@@ -186,4 +191,114 @@ Started: Mon Feb  2 21:44:10 EET 2026
   - TowerSurvivors.unity scene needs NavMesh baked for enemy pathfinding (enemies spawn but can't navigate without it)
   - TowerSurvivorsGameManager.ChangeGameState() doesn't initialize game systems - need to call StartGame() explicitly
   - UnityEvent<float> listeners must match signature exactly (can't use method with 2 params for single-param event)
+---
+
+## 2026-02-02 23:18:00 - US-016, US-017, US-018 Create UI Elements in Scene
+- What was implemented
+  - Created HUDCanvas (Screen Space Overlay) with CanvasScaler for responsive UI
+  - US-016: HUD with GoldText (top-left), WaveText (top-center), SurvivalTimeText (below wave), NextWaveTimerText, EnemiesRemainingText
+  - US-017: GameOverPanel with GameOverTitle, SurvivalTimeResult, WavesSurvivedResult, EnemiesKilledResult, GoldEarnedResult, PlayAgainButton, MainMenuButton
+  - US-018: ShopPanel (right side) with ShopTitle, TabButtons (WeaponsTabButton, UpgradesTabButton), ShopScrollView with ScrollRect, Viewport with Mask, Content with VerticalLayoutGroup
+  - Created ShopItemPrefab at Assets/_Tanks/Prefabs/TowerSurvivors/UI/ShopItemPrefab.prefab with NameText, DescriptionText, CostText, BuyButton children
+  - GameOverPanel initially inactive, activates on GameState.GameOver
+
+- Files changed
+  - Assets/_Tanks/Scenes/TowerSurvivors.unity/TowerSurvivors.unity - added HUDCanvas with all UI elements
+  - Assets/_Tanks/Prefabs/TowerSurvivors/UI/ - new folder
+  - Assets/_Tanks/Prefabs/TowerSurvivors/UI/ShopItemPrefab.prefab - new prefab
+  - scripts/ralph/prd.json - marked US-016, US-017, US-018 as complete
+
+- **Learnings for future iterations:**
+  - Unity MCP manage_gameobject with components_to_add creates UI elements with RectTransform automatically when parent has Canvas
+  - Use manage_components set_property with RectTransform properties (anchorMin, anchorMax, pivot, anchoredPosition, sizeDelta) for positioning
+  - TMP text alignment uses integer values: 257=TopLeft, 258=TopCenter, 514=MiddleCenter
+  - ContentSizeFitter.verticalFit: 0=Unconstrained, 1=MinSize, 2=PreferredSize
+  - Mask component with showMaskGraphic=false creates proper ScrollRect viewport
+  - manage_prefabs modify_contents with create_child array adds multiple children efficiently
+  - Must check for play mode - set_property fails during play mode for certain properties
+---
+
+## 2026-02-02 21:20:00 - US-022, US-023, US-024 Create Enemy Type Variety
+- What was implemented
+  - US-022: Created FastEnemyData.asset via Unity MCP manage_scriptable_object
+    - Stats: 10 HP, 10 speed (2x base), 5 damage, 3 gold
+    - Visual: Light blue color (0.5, 0.8, 1, 1), 0.7 scale
+    - Created FastEnemy.prefab by duplicating BasicEnemy.prefab
+    - Used EnemyPrefabSetup.cs editor script to assign FastEnemyData to prefab
+
+  - US-023: Created TankEnemyData.asset via Unity MCP manage_scriptable_object
+    - Stats: 60 HP, 2.5 speed (0.5x base), 20 damage, 15 gold
+    - Visual: Dark green color (0.1, 0.4, 0.1, 1), 1.3 scale
+    - Created TankEnemy.prefab by duplicating BasicEnemy.prefab
+    - Assigned TankEnemyData via editor script
+
+  - US-024: Created BossEnemyData.asset via Unity MCP manage_scriptable_object
+    - Stats: 500 HP, 3.75 speed (0.75x base), 50 damage, 100 gold
+    - Visual: Red color (0.9, 0.1, 0.1, 1), 2x scale
+    - Created BossEnemy.prefab by duplicating BasicEnemy.prefab
+    - Assigned BossEnemyData via editor script
+    - Added boss scaling: +100 HP per appearance, +50 gold per appearance
+    - Added OnBossSpawned event to WaveManager
+    - Updated HUD.cs with boss warning text and screen shake effect
+
+  - Updated WaveManager with:
+    - m_BasicEnemyPrefab, m_FastEnemyPrefab, m_TankEnemyPrefab, m_BossPrefab references
+    - m_FastEnemyStartWave (3), m_TankEnemyStartWave (5), m_BossWaveInterval (10)
+    - SpawnNormalWave() now spawns mixed enemy types based on wave number
+    - Fast enemies: 30% of wave starting at wave 3
+    - Tank enemies: 20% of wave starting at wave 5
+    - SpawnBossWave() spawns boss with HP/gold scaling based on appearance count
+    - SpawnScaledBoss() calculates HP multiplier and scaled gold reward
+
+  - Updated EnemySpawner with RegisterEnemy() method for tracking externally spawned enemies
+
+- Files changed
+  - Assets/_Tanks/ScriptableObjects/TowerSurvivors/Enemies/FastEnemyData.asset - new EnemyData
+  - Assets/_Tanks/ScriptableObjects/TowerSurvivors/Enemies/TankEnemyData.asset - new EnemyData
+  - Assets/_Tanks/ScriptableObjects/TowerSurvivors/Enemies/BossEnemyData.asset - new EnemyData
+  - Assets/_Tanks/Prefabs/TowerSurvivors/Enemies/FastEnemy.prefab - new enemy prefab
+  - Assets/_Tanks/Prefabs/TowerSurvivors/Enemies/TankEnemy.prefab - new enemy prefab
+  - Assets/_Tanks/Prefabs/TowerSurvivors/Enemies/BossEnemy.prefab - new enemy prefab
+  - Assets/_Tanks/Scripts/Editor/EnemyPrefabSetup.cs - new editor script for prefab setup
+  - Assets/_Tanks/Scripts/TowerSurvivors/Waves/WaveManager.cs - added enemy type spawning, boss scaling
+  - Assets/_Tanks/Scripts/TowerSurvivors/Enemies/EnemySpawner.cs - added RegisterEnemy() method
+  - Assets/_Tanks/Scripts/TowerSurvivors/UI/HUD.cs - added boss warning and screen shake
+  - Assets/_Tanks/Scenes/TowerSurvivors.unity - assigned prefabs to WaveManager
+  - scripts/ralph/prd.json - marked US-022, US-023, US-024 as complete
+
+- **Learnings for future iterations:**
+  - manage_scriptable_object create action works well for creating ScriptableObjects with property patches
+  - Prefab component property modification via manage_prefabs modify_contents doesn't always apply changes
+  - Creating editor scripts (EnemyPrefabSetup.cs) is effective for prefab property assignment
+  - manage_components set_property uses {"guid": "..."} format for object references on scene instances
+  - EnemySpawner tracks spawned enemies - externally spawned enemies need RegisterEnemy() call
+  - WaveManager SpawnMixedWave() provides clean interface for varied enemy spawning
+  - Boss scaling uses appearance count (wave / interval) for progressive difficulty
+  - HUD boss warning system uses OnBossSpawned event with appearance number parameter
+  - Screen shake via camera position offset in coroutine provides good feedback
+---
+
+## 2026-02-02 - US-001 Create Tower Survivors Scene
+- What was implemented
+  - Verified TowerSurvivors.unity scene exists with all required elements
+  - Scene contains: Ground (with NavMeshSurface), Directional Light, Main Camera, Tower, GameManagers, HUDCanvas
+  - Camera positioned at (0, 30, -30) with 45-degree angle - meets 45-60 degree requirement
+  - Camera is static (no movement scripts attached)
+  - Added NavMeshSurface component to Ground and baked NavMesh for enemy pathfinding
+  - Fixed compilation error in PowerUpEditor.cs (namespace conflict with Editor base class)
+  - Created NavMeshBaker.cs editor script for baking NavMesh surfaces via menu item
+  - Verified scene loads and runs without errors in play mode
+
+- Files changed
+  - Assets/_Tanks/Scripts/Editor/NavMeshBaker.cs - new editor script for NavMesh baking
+  - Assets/_Tanks/Scripts/Editor/PowerUpEditor.cs - fixed UnityEditor.Editor namespace conflict
+  - Assets/_Tanks/Scenes/TowerSurvivors.unity - added NavMeshSurface to Ground, baked NavMesh
+  - scripts/ralph/prd.json - marked US-001 as complete
+
+- **Learnings for future iterations:**
+  - NavMeshSurface component must be added to ground objects and BuildNavMesh() called to bake
+  - Editor scripts in namespaces that might conflict need fully qualified `UnityEditor.Editor` base class
+  - Creating menu items via [MenuItem] attribute allows programmatic baking via execute_menu_item
+  - Scene must be saved after NavMesh baking to persist the NavMesh data
+  - NavMesh errors ("SetDestination" can only be called on active agent on NavMesh) indicate missing or unbaked NavMesh
 ---

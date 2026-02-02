@@ -18,7 +18,7 @@
       ],
       "priority": 1,
       "passes": true,
-      "notes": "TowerSurvivors.unity scene already exists with ground, directional light, main camera, and NavMesh setup"
+      "notes": "TowerSurvivors.unity scene verified with all required elements: Ground with NavMeshSurface, Directional Light, Main Camera at 45-degree angle (0, 30, -30), GameManagers, Tower, and HUDCanvas. NavMesh baked successfully. Scene loads and runs without errors."
     },
     {
       "id": "US-002",
@@ -355,8 +355,8 @@
         "Verify fast enemies spawn and behave correctly in play mode"
       ],
       "priority": 22,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created FastEnemyData.asset via Unity MCP manage_scriptable_object (10 HP, 10 speed, 5 damage, 3 gold, light blue color, 0.7 scale). Duplicated BasicEnemy.prefab to FastEnemy.prefab. Used EnemyPrefabSetup editor script to assign FastEnemyData. Updated WaveManager with m_FastEnemyPrefab and m_FastEnemyStartWave (default 3). Fast enemies make up 30% of wave starting at wave 3."
     },
     {
       "id": "US-023",
@@ -370,8 +370,8 @@
         "Verify tank enemies spawn and behave correctly in play mode"
       ],
       "priority": 23,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created TankEnemyData.asset via Unity MCP manage_scriptable_object (60 HP, 2.5 speed, 20 damage, 15 gold, dark green color, 1.3 scale). Duplicated BasicEnemy.prefab to TankEnemy.prefab. Used EnemyPrefabSetup editor script to assign TankEnemyData. Updated WaveManager with m_TankEnemyPrefab and m_TankEnemyStartWave (default 5). Tank enemies make up 20% of wave starting at wave 5."
     },
     {
       "id": "US-024",
@@ -386,8 +386,8 @@
         "Boss HP and gold scale +100 HP, +50 gold per appearance"
       ],
       "priority": 24,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created BossEnemyData.asset via Unity MCP manage_scriptable_object (500 HP, 3.75 speed, 50 damage, 100 gold, red color, 2x scale). Duplicated BasicEnemy.prefab to BossEnemy.prefab. Used EnemyPrefabSetup editor script to assign BossEnemyData. Updated WaveManager with m_BossPrefab, m_BossHPScalePerAppearance (+100 HP per appearance), m_BossGoldScalePerAppearance (+50 gold per appearance). Added OnBossSpawned event. HUD.cs updated with boss warning text, configurable screen shake on boss spawn."
     },
     {
       "id": "US-025",

@@ -3,7 +3,7 @@ using UnityEditor;
 namespace Tanks.Complete
 {
     [CustomEditor(typeof(Complete.PowerUp))]
-    public class PowerUpEditor : Editor
+    public class PowerUpEditor : UnityEditor.Editor
     {
         SerializedProperty powerUpType;
         SerializedProperty durationTime;
