@@ -1,0 +1,523 @@
+{
+  "project": "Tower Survivors",
+  "branchName": "ralph/tower-survivors",
+  "description": "Roguelike tower defense game - stationary tower defends against waves of enemies using auto-firing weapons purchased from a shop",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Tower Survivors Scene",
+      "description": "As a developer, I need a new scene set up for Tower Survivors with ground, lighting, camera, and NavMesh.",
+      "acceptanceCriteria": [
+        "Create new scene at Assets/_Tanks/Scenes/TowerSurvivors.unity using Unity MCP",
+        "Add flat ground plane using existing desert/jungle ground assets via Unity MCP",
+        "Add directional light for proper lighting via Unity MCP",
+        "Position camera for top-down view with 45-60 degree angle, centered on play area",
+        "Camera is static (no movement scripts)",
+        "Bake NavMesh for enemy pathfinding via Unity MCP",
+        "Scene loads without errors (verify via read_console)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create TowerHealth Script",
+      "description": "As a developer, I need the TowerHealth component script so the tower can track and display health.",
+      "acceptanceCriteria": [
+        "Create Assets/_Tanks/Scripts/TowerSurvivors/Tower/ directory",
+        "Create TowerHealth.cs with: currentHealth, maxHealth (100), TakeDamage(), Die() methods",
+        "TowerHealth exposes OnHealthChanged and OnDeath events for UI binding",
+        "Die() triggers explosion effect (reference to TankExplosion prefab)",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Tower Prefab",
+      "description": "As a developer, I need the Tower prefab created and placed in the scene.",
+      "acceptanceCriteria": [
+        "Use Unity MCP to duplicate Tank prefab as base",
+        "Remove TankMovement, TankAI, and input-related components via Unity MCP",
+        "Add TowerHealth component via Unity MCP",
+        "Create Tower prefab at Assets/_Tanks/Prefabs/TowerSurvivors/Tower.prefab",
+        "Place Tower instance at center of play area (0, 0, 0) in TowerSurvivors scene",
+        "Add UI Canvas with health slider above tower via Unity MCP",
+        "Tower cannot move (verify no movement components)"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Create Enemy Scripts",
+      "description": "As a developer, I need Enemy and EnemyData scripts for enemy behavior and data-driven stats.",
+      "acceptanceCriteria": [
+        "Create Assets/_Tanks/Scripts/TowerSurvivors/Enemies/ directory",
+        "Create EnemyData.cs ScriptableObject with: health, speed, damage, goldDrop fields",
+        "Create Enemy.cs MonoBehaviour with: NavMeshAgent pathfinding to tower, health system, collision damage, death handling",
+        "Enemy references EnemyData for all stats (data-driven)",
+        "Enemy raises OnDeath event with gold amount",
+        "Scripts compile without errors (verify via read_console)"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Basic Enemy Prefab",
+      "description": "As a developer, I need the BasicEnemy prefab created with proper components.",
+      "acceptanceCriteria": [
+        "Use Unity MCP to duplicate Tank Enemy Variant as base",
+        "Change tank color to orange via Unity MCP material assignment",
+        "Add NavMeshAgent component via Unity MCP",
+        "Add Enemy component via Unity MCP",
+        "Create BasicEnemyData.asset ScriptableObject via Unity MCP with: 20 HP, base speed, 10 damage, 5 gold",
+        "Assign BasicEnemyData to Enemy component",
+        "Create prefab at Assets/_Tanks/Prefabs/TowerSurvivors/Enemies/BasicEnemy.prefab",
+        "Reference TankExplosion prefab for death effect"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create GoldManager Script",
+      "description": "As a developer, I need the GoldManager to track gold accumulation and spending.",
+      "acceptanceCriteria": [
+        "Create Assets/_Tanks/Scripts/TowerSurvivors/Economy/ directory",
+        "Create GoldManager.cs singleton with: currentGold, AddGold(), SpendGold(), CanAfford() methods",
+        "Player starts with 50 gold",
+        "Passive gold generation: 1 gold per second (configurable)",
+        "GoldManager raises OnGoldChanged event for UI binding",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create EnemySpawner Script",
+      "description": "As a developer, I need the EnemySpawner to spawn enemies around the play area.",
+      "acceptanceCriteria": [
+        "Create EnemySpawner.cs in Assets/_Tanks/Scripts/TowerSurvivors/Enemies/",
+        "Spawns enemies at random positions on circle around tower (radius ~30 units)",
+        "Configurable spawn delay between enemies (default 0.5s)",
+        "SpawnWave() method takes enemy count and prefab reference",
+        "Enemies spawned face toward tower center",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Create WaveManager Script",
+      "description": "As a developer, I need the WaveManager to control wave timing and progression.",
+      "acceptanceCriteria": [
+        "Create Assets/_Tanks/Scripts/TowerSurvivors/Waves/ directory",
+        "Create WaveManager.cs with: currentWave, waveTimer (30 seconds), StartWave(), OnWaveComplete events",
+        "Base enemy count: 5, increases by 3 each wave",
+        "Triggers EnemySpawner.SpawnWave() when wave starts",
+        "Increases GoldManager passive generation (+1 gold/sec per wave)",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create TowerSurvivorsGameManager",
+      "description": "As a developer, I need the central game manager to control game flow and state.",
+      "acceptanceCriteria": [
+        "Create Assets/_Tanks/Scripts/TowerSurvivors/Core/ directory",
+        "Create TowerSurvivorsGameManager.cs with game states: MainMenu, Playing, Paused, GameOver",
+        "Tracks currentWave, survivalTime, enemiesKilled, goldEarned",
+        "StartGame() initializes all managers and begins wave 1",
+        "Handles tower death -> GameOver state transition",
+        "Exposes OnGameStateChanged event for UI",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Wire Up Core Game Loop in Scene",
+      "description": "As a developer, I need all core managers wired up in the scene to test the basic game loop.",
+      "acceptanceCriteria": [
+        "Add empty GameObject 'GameManagers' to TowerSurvivors scene via Unity MCP",
+        "Add TowerSurvivorsGameManager component via Unity MCP",
+        "Add GoldManager component via Unity MCP",
+        "Add WaveManager component via Unity MCP",
+        "Add EnemySpawner component via Unity MCP",
+        "Configure EnemySpawner with BasicEnemy prefab reference",
+        "Configure WaveManager with EnemySpawner reference",
+        "Enter play mode and verify enemies spawn and move toward tower"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create Weapon Base Scripts",
+      "description": "As a developer, I need the Weapon and WeaponData base classes for the weapon system.",
+      "acceptanceCriteria": [
+        "Create Assets/_Tanks/Scripts/TowerSurvivors/Weapons/ directory",
+        "Create WeaponData.cs ScriptableObject with: damage, fireRate, range, projectilePrefab, rarity, cost",
+        "Create Weapon.cs MonoBehaviour with: auto-targeting nearest enemy in range, fire cooldown, Fire() method",
+        "Weapon references WeaponData for all stats (data-driven)",
+        "Weapon raises OnFire event for visual feedback",
+        "Scripts compile without errors (verify via read_console)"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create WeaponManager Script",
+      "description": "As a developer, I need WeaponManager to track equipped weapons on the tower.",
+      "acceptanceCriteria": [
+        "Create WeaponManager.cs in Assets/_Tanks/Scripts/TowerSurvivors/Weapons/",
+        "Tracks list of equipped Weapon components",
+        "AddWeapon() instantiates weapon prefab as child of tower",
+        "GetEquippedWeapons() returns current weapon list",
+        "Exposes OnWeaponAdded event for UI",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Create Projectile Script",
+      "description": "As a developer, I need a Projectile script for weapon projectiles.",
+      "acceptanceCriteria": [
+        "Create Projectile.cs in Assets/_Tanks/Scripts/TowerSurvivors/Weapons/",
+        "Projectile moves toward target or in set direction at configurable speed",
+        "Deals damage on collision with Enemy layer",
+        "Optional: area damage with configurable radius",
+        "Destroys self after hit or after max lifetime",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Create Cannon Weapon",
+      "description": "As a player, I want a basic cannon weapon to start defending my tower.",
+      "acceptanceCriteria": [
+        "Create CannonData.asset ScriptableObject via Unity MCP: 15 damage, 1.5s fire rate, 15 unit range",
+        "Use Unity MCP to create Cannon prefab with Weapon component at Assets/_Tanks/Prefabs/TowerSurvivors/Weapons/",
+        "Cannon uses existing Shell prefab as projectile (or create modified version)",
+        "Projectile has small area damage on impact (2 unit radius)",
+        "Assign CannonData to Cannon weapon component",
+        "Set rarity: Common, cost: 0 (starter weapon)"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Equip Starter Cannon on Tower",
+      "description": "As a player, I want to start with a cannon equipped so I can defend immediately.",
+      "acceptanceCriteria": [
+        "Add WeaponManager component to Tower prefab via Unity MCP",
+        "Configure TowerSurvivorsGameManager to equip Cannon on game start",
+        "Cannon auto-targets and fires at enemies in range",
+        "Enter play mode: verify cannon fires at spawned enemies",
+        "Enemies take damage and die when hit"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Create Basic HUD",
+      "description": "As a player, I want a HUD showing gold, wave number, and survival time.",
+      "acceptanceCriteria": [
+        "Create Assets/_Tanks/Scripts/TowerSurvivors/UI/ directory",
+        "Create HUD.cs script that updates UI text elements",
+        "Use Unity MCP to create UI Canvas with: Gold counter (top-left), Wave number (top-center), Survival time (below wave)",
+        "HUD subscribes to GoldManager.OnGoldChanged, WaveManager.OnWaveChanged events",
+        "UI elements readable with clear fonts",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Create Game Over UI",
+      "description": "As a player, I want to see my final stats when the game ends.",
+      "acceptanceCriteria": [
+        "Create GameOverUI.cs script in Assets/_Tanks/Scripts/TowerSurvivors/UI/",
+        "Use Unity MCP to create Game Over panel (initially hidden)",
+        "Shows: survival time, waves survived, enemies killed, gold earned",
+        "Play Again button calls TowerSurvivorsGameManager.RestartGame()",
+        "Panel activates when GameState changes to GameOver",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Create Shop UI Framework",
+      "description": "As a player, I want a shop panel visible during gameplay.",
+      "acceptanceCriteria": [
+        "Create ShopUI.cs script in Assets/_Tanks/Scripts/TowerSurvivors/UI/",
+        "Use Unity MCP to create shop panel on right side of screen",
+        "Shop panel scrollable with ScrollRect component",
+        "ShopItemUI prefab: displays name, cost, description, buy button",
+        "Items grayed out when player cannot afford them",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Create Additional Weapons for Shop",
+      "description": "As a player, I want multiple weapons available to purchase.",
+      "acceptanceCriteria": [
+        "Create MachineGunData.asset: 5 damage, 0.2s fire rate, 12 range, Common, 75 gold",
+        "Create MachineGun.prefab with Weapon component via Unity MCP",
+        "Create LaserData.asset: 20 damage, 2s fire rate, 20 range, Uncommon, 200 gold (piercing)",
+        "Create Laser.prefab with Weapon component and LineRenderer for beam effect",
+        "Create MortarData.asset: 30 damage, 3s fire rate, 25 range, Rare, 350 gold (5 unit AoE)",
+        "Create Mortar.prefab with arcing projectile behavior"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Wire Shop to WeaponManager",
+      "description": "As a player, I want to buy weapons from the shop and have them equip automatically.",
+      "acceptanceCriteria": [
+        "ShopUI.PopulateWeapons() loads available weapons from WeaponData assets",
+        "Buy button calls GoldManager.SpendGold() and WeaponManager.AddWeapon()",
+        "Purchased weapons immediately start targeting and firing",
+        "Shop item updates to show 'Owned' or allows buying duplicates",
+        "Enter play mode: verify purchasing weapon deducts gold and weapon fires"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Create UpgradeManager and Upgrade Shop Items",
+      "description": "As a player, I want to buy upgrades that improve tower stats.",
+      "acceptanceCriteria": [
+        "Create UpgradeData.cs ScriptableObject: upgradeName, description, cost, maxStacks, effect type/value",
+        "Create UpgradeManager.cs: tracks purchased upgrades, applies effects, handles stacking",
+        "Create 5 upgrade assets via Unity MCP: Max HP (+25), HP Regen (+1/sec), Gold Gen (+0.5/sec), Damage Boost (+10%), Attack Speed (+10%)",
+        "Upgrades can be purchased multiple times up to maxStacks",
+        "ShopUI shows upgrades in separate section or tab",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Create Fast Enemy Type",
+      "description": "As a player, I want fast enemies for combat variety.",
+      "acceptanceCriteria": [
+        "Create FastEnemyData.asset via Unity MCP: 10 HP, 2x speed, 5 damage, 3 gold",
+        "Use Unity MCP to create FastEnemy.prefab: smaller scale (0.7), light blue color",
+        "Add Enemy component and assign FastEnemyData",
+        "Update WaveManager to include FastEnemy starting wave 3",
+        "Verify fast enemies spawn and behave correctly in play mode"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Create Tank Enemy Type",
+      "description": "As a player, I want tanky enemies that are hard to kill.",
+      "acceptanceCriteria": [
+        "Create TankEnemyData.asset via Unity MCP: 60 HP, 0.5x speed, 20 damage, 15 gold",
+        "Use Unity MCP to create TankEnemy.prefab: larger scale (1.3), dark green color",
+        "Add Enemy component and assign TankEnemyData",
+        "Update WaveManager to include TankEnemy starting wave 5",
+        "Verify tank enemies spawn and behave correctly in play mode"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Create Boss Enemy Type",
+      "description": "As a player, I want boss enemies at milestone waves.",
+      "acceptanceCriteria": [
+        "Create BossEnemyData.asset via Unity MCP: 500 HP, 0.75x speed, 50 damage, 100 gold",
+        "Use Unity MCP to create BossEnemy.prefab: 2x scale, red color",
+        "Add Enemy component and assign BossEnemyData",
+        "Update WaveManager to spawn boss at waves 10, 20, 30, etc. (instead of normal wave)",
+        "Add screen shake or warning text when boss spawns",
+        "Boss HP and gold scale +100 HP, +50 gold per appearance"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "Create Main Menu",
+      "description": "As a player, I want a main menu to start the game.",
+      "acceptanceCriteria": [
+        "Create MainMenuUI.cs script in Assets/_Tanks/Scripts/TowerSurvivors/UI/",
+        "Use Unity MCP to create main menu UI panel (covers full screen)",
+        "Game title 'Tower Survivors' prominently displayed",
+        "Start Game button calls TowerSurvivorsGameManager.StartGame()",
+        "High score display: best survival time, best wave reached",
+        "Menu visible when GameState is MainMenu, hidden during Playing"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-026",
+      "title": "Implement Pause Menu",
+      "description": "As a player, I want to pause the game.",
+      "acceptanceCriteria": [
+        "Create PauseMenuUI.cs script in Assets/_Tanks/Scripts/TowerSurvivors/UI/",
+        "ESC key toggles pause (TowerSurvivorsGameManager.TogglePause())",
+        "Time.timeScale = 0 when paused, = 1 when resumed",
+        "Pause overlay with Resume and Quit to Menu buttons",
+        "Shop visible but purchases disabled while paused",
+        "Script compiles without errors (verify via read_console)"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-027",
+      "title": "Implement High Score Persistence",
+      "description": "As a player, I want my high scores saved between sessions.",
+      "acceptanceCriteria": [
+        "Create HighScoreManager.cs in Assets/_Tanks/Scripts/TowerSurvivors/Core/",
+        "Save to PlayerPrefs: BestSurvivalTime, BestWaveReached, TotalEnemiesKilled",
+        "Load high scores on game start",
+        "Update high scores on game over if new record",
+        "Show 'New Record!' notification when high score beaten",
+        "MainMenuUI displays loaded high scores"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-028",
+      "title": "Implement Wave Scaling",
+      "description": "As a developer, I need proper difficulty scaling for balanced gameplay.",
+      "acceptanceCriteria": [
+        "Create WaveConfig.cs ScriptableObject with scaling parameters",
+        "Create WaveConfig.asset via Unity MCP with: healthScale +10%/wave, damageScale +5%/wave, speedScale +2%/wave (cap 50%)",
+        "Enemy.cs applies wave scaling multipliers from WaveConfig",
+        "WaveManager passes current wave to Enemy spawning",
+        "Enemy count scales logarithmically (configurable formula)",
+        "Verify scaling works in play mode across multiple waves"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-029",
+      "title": "Create Tesla Coil Weapon",
+      "description": "As a player, I want a chain lightning weapon for unique gameplay.",
+      "acceptanceCriteria": [
+        "Create TeslaCoilData.asset via Unity MCP: 12 damage, 1.5s fire rate, 10 range, Rare, 400 gold",
+        "Create TeslaCoil.prefab with chain lightning behavior",
+        "Lightning chains to 3 nearby enemies within 5 units of each other",
+        "Each chain deals 75% of previous damage (12 -> 9 -> 6.75)",
+        "Visual: LineRenderer lightning effect between targets",
+        "Add to shop weapon list"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-030",
+      "title": "Create Ranged Enemy Type",
+      "description": "As a player, I want ranged enemies that attack from distance.",
+      "acceptanceCriteria": [
+        "Create RangedEnemyData.asset via Unity MCP: 20 HP, base speed, 8 projectile damage, 8 gold",
+        "Use Unity MCP to create RangedEnemy.prefab: medium scale, purple color",
+        "Ranged enemy stops at 10 units from tower and fires projectiles",
+        "Create EnemyProjectile.cs for enemy ranged attacks",
+        "Update WaveManager to include RangedEnemy starting wave 7",
+        "Verify ranged enemies stop and shoot at tower"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-031",
+      "title": "Add Weapon Inventory Display",
+      "description": "As a player, I want to see my equipped weapons on screen.",
+      "acceptanceCriteria": [
+        "Create WeaponInventoryUI.cs in Assets/_Tanks/Scripts/TowerSurvivors/UI/",
+        "Use Unity MCP to create weapon icon panel on left side of screen",
+        "Shows weapon icons for each equipped weapon",
+        "Tooltip shows weapon name on hover (if supported) or always visible",
+        "Icon pulses or highlights when weapon fires",
+        "Max 8 weapons visible, scrollable if more"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-032",
+      "title": "Final Polish and Integration Testing",
+      "description": "As a developer, I need to verify the complete game loop works end-to-end.",
+      "acceptanceCriteria": [
+        "Main menu -> Start Game -> Playing works",
+        "Waves spawn correctly every 30 seconds with enemy variety",
+        "Shop purchases work for weapons and upgrades",
+        "Tower death triggers Game Over screen with correct stats",
+        "Play Again restarts game properly",
+        "High scores persist after closing and reopening",
+        "No console errors during normal gameplay",
+        "Game runs smoothly with 30+ enemies on screen"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

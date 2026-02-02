@@ -1,0 +1,443 @@
+# Ralph Progress Log
+Started: Thu Jan 29 16:29:51 EET 2026
+---
+
+## 2026-01-29 16:38 - US-001
+- Implemented RuleAction and ScoreInterpretation enums in clothing/domain/enums.py
+- RuleAction enum with GOOD (1), OK (0), BAD (-1) values for weighted scoring
+- ScoreInterpretation enum with GOOD, OK, BAD values for categorization
+- Files changed: clothing/domain/enums.py
+- **Learnings for future iterations:**
+  - Enum pattern follows existing style in the file with descriptive docstrings
+  - Use Python's built-in Enum class for type safety
+  - Values are accessible via .value attribute (e.g., RuleAction.GOOD.value returns 1)
+  - Testing enum imports works by importing and checking values
+---
+
+## 2026-01-29 17:15 - US-002
+- Updated RuleResult model in clothing/domain/results.py with new scoring fields
+- Added: rule_id (str), matched (bool), action (RuleAction), score (float), description (str)
+- Implemented weighted_score as computed_field property: score * action.value when matched, 0 otherwise
+- Added import for RuleAction enum from .enums
+- Files changed: clothing/domain/results.py
+- **Learnings for future iterations:**
+  - Use @computed_field decorator for calculated properties in Pydantic models
+  - Pydantic v2 supports computed_field for derived values
+  - Import relative modules with .module_name syntax
+  - Test model behavior by creating instances and checking computed values
+  - weighted_score calculation works correctly: GOOD=10.0, BAD=-5.0, OK=0.0, unmatched=0.0
+---
+
+## 2026-01-29 18:20 - US-003
+- Created EvaluationResult model in clothing/domain/results.py for overall evaluation results
+- Added: total_score (float, 0-100), interpretation (ScoreInterpretation), rule_results (list[RuleResult])
+- Implemented field validation to ensure total_score is between 0-100
+- Added import for ScoreInterpretation enum from .enums
+- Files changed: clothing/domain/results.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - EvaluationResult provides normalized scoring with semantic interpretation
+  - Model validation ensures data integrity for score ranges
+  - ScoreInterpretation enum categorizes scores as GOOD/OK/BAD for user-friendly display
+  - Testing model creation and validation works with edge cases (0.0, 100.0) and invalid values (>100)
+---
+
+## 2026-01-29 18:50 - US-004
+- Created clothing/engine/schema.py with Pydantic models for rule JSON validation
+- Implemented RuleCondition model supporting all comparison and logical operators (=, !=, IN, NOT IN, >, >=, <, <=, LIKE, BETWEEN, AND, OR, NOT)
+- Implemented MathExpression model for mathematical operations (+, -, *, /, %) with field references ($field)
+- Implemented RuleDefinition model with complete rule structure (id, priority, score, action, description, condition)
+- Updated to Pydantic v2 syntax using @field_validator and @model_validator decorators
+- Files changed: clothing/engine/schema.py
+- **Learnings for future iterations:**
+  - This codebase uses Pydantic v2 - use @field_validator and @model_validator instead of @validator
+  - Schema supports nested field access via dot notation (e.g., 'item_a.color') 
+  - Complex validation requires @model_validator(mode='after') for cross-field validation
+  - Forward references require model_rebuild() call at end of file
+  - Math expressions use $field notation for field references (e.g., $score, $item_a.color)
+---
+
+## 2026-01-29 19:25 - US-005
+- Implemented ClothingRuleEngine class in clothing/engine/ast_parser.py for core AST condition evaluation
+- Added evaluate_condition method supporting all comparison operators (=, !=, IN, NOT IN, >, >=, <, <=, LIKE, BETWEEN)  
+- Added logical operators (AND, OR, NOT) with recursive condition evaluation
+- Implemented _get_field_value method with nested field access via dot notation (e.g., 'item_a.color')
+- Added proper edge case handling for missing fields returning None
+- Files changed: clothing/engine/ast_parser.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - AST parser uses recursive evaluation for logical operators (AND, OR, NOT)
+  - LIKE operator converts SQL patterns (% and _) to regex for string matching
+  - Numeric comparisons handle None values gracefully by returning False
+  - Field access uses dot notation splitting for nested dictionary traversal
+  - All comparison operations include type conversion safety for numeric operations
+---
+
+## 2026-01-29 19:35 - US-006
+- Extended AST parser with math expression evaluation functionality (_evaluate_math method)
+- Added support for all mathematical operators (+, -, *, /, %) with proper error handling
+- Implemented _resolve_operand method supporting numbers, field references ($field), and nested expressions
+- Added division by zero protection returning None for both / and % operators  
+- Enhanced field reference support in math expressions using $ prefix notation
+- Files changed: clothing/engine/ast_parser.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Math expressions support nested evaluation for complex calculations like ($a + $b) * $c
+  - Field references in math use $ prefix notation (e.g., $score, $item_a.price)
+  - Division by zero and modulo by zero are handled gracefully by returning None
+  - Math operand resolution supports numbers, strings (field refs), and nested expression dictionaries
+  - Type conversion errors in math expressions are caught and return None for safety
+---
+
+## 2026-01-29 19:45 - US-007
+- Implemented rule evaluation methods in ClothingRuleEngine class
+- Added evaluate_rule(rule: dict, item: dict) -> RuleResult supporting string-to-enum conversion for action field
+- Added evaluate_all(rules: list[dict], item: dict) -> tuple[list[RuleResult], float] with priority sorting (lower number = higher priority)
+- Added evaluate_pair(rules: list[dict], item_a: dict, item_b: dict) creating combined context with both nested and flattened field access
+- Combined context supports both item_a.color and item_a nested field access patterns
+- Files changed: clothing/engine/ast_parser.py, scripts/ralph/prd.json  
+- **Learnings for future iterations:**
+  - Rule evaluation supports automatic conversion from action strings ("GOOD") to RuleAction enums
+  - Priority sorting uses lambda with default fallback (999) for missing priority fields
+  - Pair evaluation creates combined context with both nested (item_a) and flattened (item_a.color) field access
+  - Total weighted score accumulates all matched rule weighted_scores across the evaluation set
+  - RuleResult weighted_score property handles the score * action.value calculation automatically
+---
+
+## 2026-01-29 19:55 - US-008
+- Implemented SQL generation from rules in ClothingRuleEngine class
+- Added to_sql_where method converting JSON conditions to SQL WHERE clauses with parameterized queries
+- Added rule_to_sql method for table-aware SQL generation with field replacement (item_a.field -> table_a.field)
+- Implemented proper SQL escaping using quoted field names and %s placeholders for SQL injection protection
+- Support for all comparison operators (=, !=, IN, NOT IN, >, >=, <, <=, LIKE, BETWEEN) and logical operators (AND, OR, NOT)
+- Files changed: clothing/engine/ast_parser.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - SQL generation uses parameterized queries (%s placeholders) to prevent SQL injection attacks
+  - Field names are escaped with double quotes to handle special characters and SQL reserved words
+  - Logical operators generate nested parentheses for proper precedence (e.g., "(condition1) AND (condition2)")
+  - Table field replacement uses regex substitution for item_a.field -> table_alias.field patterns
+  - Empty conditions return "1=1" (always true) and empty IN lists return "1=0" (always false)
+---
+
+## 2026-01-29 20:30 - US-009
+- Created migration file 007_ast_rule_engine.sql with AST-specific columns for engine_rules table
+- Added action column with CHECK constraint for GOOD, OK, BAD values
+- Added score (FLOAT, default 1.0), description (TEXT), condition (JSONB), priority (INTEGER, default 999) columns
+- Added comments for documentation and index on priority column for efficient sorting
+- Files changed: resources/007_ast_rule_engine.sql, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Migration files follow sequential numbering pattern (006 -> 007)
+  - Use ALTER TABLE with IF NOT EXISTS for safe column additions
+  - CHECK constraints ensure data integrity for enum-like values
+  - JSONB column type supports complex AST condition structures
+  - Priority column enables rule execution ordering (lower number = higher priority)
+---
+
+## 2026-01-29 22:15 - US-010 through US-015
+- Extended migration file with global_rules, user_rules, and score_thresholds tables
+- Implemented complete database schema for AST rule engine including:
+  - global_rules table with categorization, default flag, and version tracking
+  - user_rules table with user-specific overrides and FK to global rules
+  - score_thresholds table with configurable interpretation ranges and default seeding
+- Created comprehensive Pydantic models for score threshold management (Create/Update/Response)
+- Implemented full repository layer for score threshold CRUD operations with validation
+- Added complete API endpoints for score threshold management with proper error handling
+- Integrated service layer with business validation for threshold operations
+- Files changed: resources/007_ast_rule_engine.sql, internal/models.py, internal/repository.py, internal/api.py, internal/service.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Database schema supports full rule hierarchy: global -> user -> evaluation context
+  - Score thresholds provide configurable interpretation of numerical scores (0-100) -> (GOOD/OK/BAD)
+  - Repository methods handle UUID conversion to strings for database operations
+  - Service layer provides business validation (unique names, threshold ordering)
+  - API endpoints follow RESTful patterns with proper HTTP status codes and error handling
+  - Pydantic field validation ensures data integrity at model level
+  - Foreign key constraints with SET NULL preserve referential integrity for optional relationships
+---
+
+## 2026-01-29 - US-016  
+- Implemented global rule Pydantic models in internal/models.py
+- Added RuleConditionModel for JSON condition validation with operator validation
+- Created GlobalRuleCreate model with required fields (rule_name, action, score, description, condition, priority, category, is_default)
+- Created GlobalRuleUpdate model for partial updates with optional fields
+- Created GlobalRuleResponse model with all database fields (id, version, created_at, updated_at, etc.)
+- Added comprehensive field validation for action enum values (GOOD, OK, BAD), positive scores, non-negative priorities, and valid categories
+- Files changed: internal/models.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Pydantic models support RuleAction enum directly for type safety and validation
+  - Forward reference handling needed for recursive model structures (RuleConditionModel)
+  - Field validators can check enum membership and provide clear error messages
+  - Category validation uses set membership for clean allowed values checking
+  - Optional field validation requires None checks in update models
+---
+
+## 2026-01-29 - US-017
+- Implemented global rule repository methods in internal/repository.py
+- Added get_all_global_rules(category, enabled_only) with optional filtering and ordering by priority
+- Added get_global_rule(rule_id) and create_global_rule(rule_data, created_by) methods
+- Added update_global_rule(rule_id, rule_data) with version incrementing and timestamp updates
+- Added delete_global_rule(rule_id) and get_default_rules() methods
+- All methods use proper UUID string conversion and transaction handling with commit/rollback
+- Files changed: internal/repository.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Global rules table follows same pattern as score_thresholds with UUID to string conversion
+  - Repository methods use parameterized queries and proper transaction handling
+  - Dynamic field updates enable partial updates while preserving existing data
+  - Version incrementing pattern maintains audit trail for rule changes
+  - Query building with optional filters allows flexible data access patterns
+---
+
+## 2026-01-29 - US-018
+- Implemented global rule API endpoints for complete CRUD operations
+- Added service layer methods with condition validation and business rules (duplicate name checking, condition JSON structure validation)
+- Added 6 API endpoints: GET /global-rules, GET /global-rules/{rule_id}, POST /global-rules, PUT /global-rules/{rule_id}, DELETE /global-rules/{rule_id}, POST /global-rules/{rule_id}/duplicate
+- Implemented duplicate rule functionality with automatic name collision handling
+- Added comprehensive error handling, validation, and proper HTTP status codes
+- Files changed: internal/service.py, internal/api.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - API endpoints follow consistent RESTful patterns with proper HTTP status codes (201 for creation, 204 for deletion)
+  - Service layer provides recursive condition validation for complex AST structures
+  - Duplicate functionality uses counter-based naming to ensure uniqueness
+  - Global rule validation includes condition JSON structure validation and business rule enforcement
+  - Error handling separates ValidationErrors (400) from HTTPExceptions and general errors (500)
+  - All endpoints require API key authentication via dependency injection pattern
+---
+
+## 2026-01-29 - US-019
+- Implemented user rule Pydantic models in internal/models.py for user-specific rule management
+- Added UserRuleCreate model with required fields: global_rule_id (optional), condition, action, score, description, priority
+- Added UserRuleUpdate model for partial updates with all optional fields and proper validation
+- Added UserRuleResponse model with database fields: id, user_id, global_rule_id, enabled, created_at, updated_at plus all rule fields
+- Implemented comprehensive field validation including action enum validation, positive score validation, and non-negative priority validation
+- Files changed: internal/models.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - User rule models follow same validation pattern as global rules but include user_id and enabled fields
+  - UserRuleCreate supports optional global_rule_id for linking to templates while allowing custom rules
+  - UserRuleUpdate model enables partial updates with proper None checking in validators
+  - User-specific rules maintain same structure as global rules but add user context and enable/disable functionality
+  - Model validation pattern is consistent across all rule types (global, user) for maintainability
+---
+
+## 2026-01-29 - US-020
+- Implemented user rule repository methods in internal/repository.py for complete user rule management
+- Added get_user_rules(user_id, enabled_only) method with user filtering and enabled state filtering
+- Added copy_global_rules_to_user(user_id, global_rule_ids) method with optional rule ID list and default rule fallback
+- Added create_user_rule(user_id, rule_data), update_user_rule(rule_id, rule_data), delete_user_rule(rule_id) methods
+- Added reset_user_rules(user_id) method for complete user rule reset with default rule copying
+- Implemented duplicate checking to prevent copying same global rule multiple times
+- Files changed: internal/repository.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - User rules follow same UUID to string conversion pattern as global rules and score thresholds
+  - Copy operations include duplicate checking to prevent constraint violations on (user_id, global_rule_id)
+  - Reset operations use transaction separation (delete first, then copy) for data integrity
+  - Query building with optional filters allows flexible data access for user-specific rule sets
+  - User rule management supports both global rule templates and custom user-created rules
+---
+
+## 2026-01-29 - US-021
+- Implemented user rule API endpoints for complete user rule management via REST API
+- Added GET /users/{user_id}/rules endpoint with optional enabled_only filtering
+- Added POST /users/{user_id}/rules/copy-global endpoint for copying global rules to users (with optional rule ID list)
+- Added POST /users/{user_id}/rules endpoint for creating custom user rules with validation
+- Added PUT /users/{user_id}/rules/{rule_id} and DELETE /users/{user_id}/rules/{rule_id} endpoints for rule management
+- Added POST /users/{user_id}/rules/reset endpoint for resetting user rules to defaults
+- Added corresponding service layer methods with condition JSON validation and business logic
+- Files changed: internal/api.py, internal/service.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - User rule API endpoints follow same RESTful pattern as global rules with user_id path parameter
+  - Service layer provides condition JSON validation reusing _validate_condition_structure method
+  - API endpoints use List[UserRuleResponse] for multi-rule operations (get, copy, reset)
+  - FastAPI Depends() pattern enables clean dependency injection for service instances
+  - UUID path parameters automatically validated and converted by FastAPI framework
+  - User rule operations support both global rule templates and custom user rules seamlessly
+---
+
+## 2026-01-29 - US-022
+- Implemented rule testing endpoints for validating rules against sample data using AST parser
+- Added POST /global-rules/{rule_id}/test endpoint accepting single item or item pairs for rule evaluation
+- Added POST /global-rules/test-batch endpoint for testing multiple rules against sample data with total scoring
+- Integrated ClothingRuleEngine from AST parser for actual rule evaluation in testing scenarios
+- Added comprehensive validation for test data formats and rule existence checking
+- Both endpoints support single item tests ({ item }) and pair tests ({ item_a, item_b }) with combined context
+- Files changed: internal/api.py, internal/service.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Rule testing endpoints integrate AST parser engine for actual rule evaluation against sample data
+  - Combined item context creation matches evaluate_pair pattern from AST parser (item_a.field flattening)
+  - Service layer imports ClothingRuleEngine dynamically to avoid circular dependencies
+  - RuleResult objects converted to dictionaries with action.name for API serialization
+  - Batch testing accumulates weighted scores and provides comprehensive result metadata
+  - Test data validation ensures proper structure before passing to AST parser engine
+---
+
+## 2026-01-29 - US-023
+- Completed service layer rule management with sync_user_rules method preserving user customizations
+- Added sync_user_rules(user_id) method that adds new default global rules while preserving existing user overrides
+- Service layer now provides complete rule management: global, user, score thresholds, testing, and synchronization
+- All service methods include proper validation (condition JSON structure, business rules, duplicate checking)
+- Sync method intelligently compares user rules with current defaults and adds only missing rules
+- Files changed: internal/service.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Service layer acts as central orchestrator for all rule operations with comprehensive validation
+  - Sync operations preserve user customizations by checking global_rule_id links before adding new defaults
+  - Business logic separation allows API layer to focus on HTTP concerns while service handles rule logic
+  - All CRUD operations follow consistent patterns: repository calls wrapped with validation and error handling
+  - UUID string conversion handled consistently across all service methods for database operations
+---
+
+## 2026-01-29 - US-024
+- Created example rule JSON files for testing and seed data with 15 total rules across 4 categories
+- Created resources/rules/ directory structure with color_rules.json (4 rules), formality_rules.json (4 rules), pattern_rules.json (4 rules), type_rules.json (3 rules)
+- All rules include required fields: id, priority, score, action, description, condition with proper AST-based condition structures
+- Rules cover real-world fashion scenarios: color harmony/clashes, formality matching, pattern mixing, and type compatibility
+- Each rule follows AST parser condition format with proper operator support (=, AND, IN) for rule engine evaluation
+- Rules categorized appropriately (color, formality, pattern, type) with is_default=true for automatic user assignment
+- Files created: resources/rules/color_rules.json, resources/rules/formality_rules.json, resources/rules/pattern_rules.json, resources/rules/type_rules.json, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Example rules provide realistic test data for AST parser validation and rule engine testing
+  - Rule JSON structure mirrors global_rules database schema for easy import via seed scripts
+  - Priority values determine evaluation order (lower = higher priority) for rule processing
+  - Action values (GOOD/OK/BAD) with numeric scores provide weighted scoring for outfit evaluation
+  - Condition structures use proper AST format with op, field, value/values for engine compatibility
+---
+
+## 2026-01-29 - US-025
+- Created seed script for example rules at scripts/seed_rules.py that reads rule JSON files from resources/rules/
+- Script inserts rules into global_rules table with duplicate checking based on rule_name (idempotent)
+- Implements proper error handling, transaction management, and reports inserted/skipped counts
+- Script can be run multiple times safely by checking existing rules before insertion
+- Uses psycopg with dict_row cursor factory following existing repository patterns
+- Files changed: scripts/seed_rules.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Seed scripts follow database connection patterns from existing repositories (psycopg.connect with dict_row)
+  - Rule JSON files contain complete rule definitions matching global_rules table schema
+  - Idempotent operations use SELECT before INSERT pattern to prevent duplicate constraint violations
+  - JSON condition field requires json.dumps() conversion for JSONB database storage
+  - Script structure includes proper logging, error handling, and progress reporting for operational visibility
+---
+
+## 2026-01-29 - US-026
+- Updated clothing/engine/config_loader.py with load_rules_from_db method for database rule loading
+- Added caching with configurable TTL (default 5 minutes) using RULE_CACHE_TTL environment variable
+- Implemented user-specific rule loading via optional user_id parameter  
+- Added fallback to JSON file if database unavailable with comprehensive error handling
+- Enhanced constructor to accept database_url parameter for repository initialization
+- Files changed: clothing/engine/config_loader.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Config loader now supports both file-based and database-based rule loading with caching
+  - Cache TTL configurable via RULE_CACHE_TTL env var (default 300 seconds = 5 minutes)
+  - Database fallback to JSON ensures reliability when database is unavailable
+  - User-specific rules loaded when user_id provided, global rules otherwise
+  - Repository import done locally to avoid circular dependencies
+  - Cache invalidation based on time expiry for fresh data loading
+---
+
+## 2026-01-29 - US-027
+- Integrated AST parser with clothing engine by injecting ClothingRuleEngine into RuleEngine and OutfitRuleEngine classes
+- Updated clothing/engine/rules.py to include AST engine in constructor and added methods for AST-based rule evaluation
+- Added evaluate_item_with_ast() method for single item evaluation using database rules
+- Added evaluate_with_legacy_and_ast() method for backwards-compatible evaluation combining legacy and AST rules
+- Updated clothing/engine/outfit_rules.py to pass AST engine to parent constructor and support pair evaluation
+- Added evaluate_pair_with_ast() method for evaluating item pairs using AST rules from database
+- Added evaluate_outfit_with_ast() method for full outfit evaluation including pair-wise rule evaluation
+- Maintained backwards compatibility by keeping existing method signatures unchanged
+- Files changed: clothing/engine/rules.py, clothing/engine/outfit_rules.py
+- **Learnings for future iterations:**
+  - AST parser integration maintains backward compatibility through optional parameters and separate evaluation methods
+  - ClothingRuleEngine supports both single item evaluation and pair evaluation for outfit compatibility rules
+  - Rule loading from database uses existing config_loader.load_rules_from_db() method with optional user_id
+  - Item dictionary conversion uses model_dump() if available (Pydantic models) or __dict__ fallback
+  - Pair evaluation creates combined context with flattened fields (item_a.field) for AST condition matching
+  - Legacy and AST results can be combined for comprehensive evaluation during transition period
+---
+
+## 2026-01-29 - US-028
+- Updated evaluation service to support user-specific rules by passing user_id through evaluation pipeline
+- Modified clothing/engine/engine.py to accept user_id parameter in evaluate_item and evaluate_outfit methods
+- Enhanced EvaluationEngine to use combined legacy+AST evaluation when user_id provided, legacy-only otherwise
+- Updated clothing/service/evaluation_service.py to pass user_id to evaluation engine methods
+- Made EvaluationService methods async to support async evaluation engine calls
+- User rules loaded via existing config_loader.load_rules_from_db() with caching (implemented in US-026)
+- Falls back to global rules when user has no custom rules through config loader logic
+- Files changed: clothing/engine/engine.py, clothing/service/evaluation_service.py
+- **Learnings for future iterations:**
+  - Evaluation pipeline now supports user-specific rule customization with fallback to global rules
+  - Service methods made async to support async evaluation pipeline (evaluate_item, evaluate_outfit)
+  - User rule caching handled by config_loader layer with configurable TTL (RULE_CACHE_TTL env var)
+  - Combined evaluation approach maintains backward compatibility during transition to AST-based rules
+  - User_id parameter flows through: Service -> Engine -> RuleEngine -> ConfigLoader -> Repository
+  - AST rule evaluation integrates seamlessly with existing rule-based scoring and AI evaluation
+---
+
+## 2026-01-29 - US-029
+- Implemented rule activation/deactivation endpoints for both global and user rules
+- Added repository methods: activate_global_rule, deactivate_global_rule, activate_user_rule, deactivate_user_rule
+- Added service layer methods with validation for rule activation/deactivation operations
+- Added 4 API endpoints: POST /global-rules/{rule_id}/activate, POST /global-rules/{rule_id}/deactivate, POST /users/{user_id}/rules/{rule_id}/activate, POST /users/{user_id}/rules/{rule_id}/deactivate
+- Verified deactivated rules are excluded from evaluation by default through existing enabled_only=True filters in repository methods
+- All endpoints include proper error handling, validation, and return appropriate HTTP status codes
+- Files changed: internal/repository.py, internal/service.py, internal/api.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Database schema already includes enabled BOOLEAN columns for both global_rules and user_rules tables
+  - Repository methods already implement enabled_only filtering by default (enabled_only=True parameter)
+  - Deactivated rules automatically excluded from evaluation through existing WHERE enabled = TRUE filters
+  - Activation/deactivation endpoints follow same REST pattern as other rule management endpoints
+  - Service layer provides ID validation before calling repository methods
+  - API endpoints return JSON success messages with 200 status codes for activation/deactivation operations
+---
+
+## 2026-01-29 - US-030
+- Implemented comprehensive unit tests for AST parser in tests/clothing/test_ast_parser.py
+- Created 32 test cases covering all comparison operators (=, !=, IN, NOT IN, >, >=, <, <=, LIKE, BETWEEN)
+- Added test coverage for logical operators (AND, OR, NOT) with recursive evaluation
+- Tested nested field access via dot notation (e.g., 'item_a.color', 'metadata.season')
+- Comprehensive math expression testing including all operators (+, -, *, /, %) with field references ($field notation)
+- Edge case testing: missing fields return None, division by zero, type conversion errors, empty conditions
+- Rule evaluation testing: single rule evaluation, multiple rules with priority sorting, pair evaluation with combined context
+- All 32 tests pass successfully, providing comprehensive coverage of ClothingRuleEngine functionality
+- Files changed: tests/clothing/test_ast_parser.py, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - AST parser test suite validates all core functionality including comparison, logical, and math operations
+  - Test coverage includes edge cases like None handling, division by zero, and type conversion safety
+  - Pair evaluation creates combined context with both nested (item_a) and flattened (item_a.field) access patterns
+  - Rule evaluation tests confirm priority sorting, weighted scoring, and action enum conversion work correctly
+  - Field reference testing with $ notation confirms math expressions can access item data dynamically
+  - Test structure follows unittest pattern with comprehensive setUp and isolated test methods
+---
+
+## 2026-01-29 - US-031
+- Implemented comprehensive unit tests for rule evaluation and scoring in tests/clothing/test_rule_evaluation.py
+- Created 15 test cases covering single rule evaluation with GOOD, OK, BAD actions and weighted scoring
+- Added multiple rule evaluation tests with priority sorting and mixed match scenarios
+- Tested pair evaluation with combined context using item_a/item_b field references and flattened field access
+- Implemented score normalization testing to 0-100 range with complex calculation scenarios
+- Added score interpretation tests for GOOD/OK/BAD ranges using ScoreInterpretation enum
+- Tested EvaluationResult model validation with edge cases (0.0, 100.0) and constraint checking
+- Complex scenario testing with realistic rules covering colors, prices, formality, and patterns
+- All 15 tests pass successfully, providing comprehensive coverage of rule evaluation functionality
+- Files changed: tests/clothing/test_rule_evaluation.py, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - Rule evaluation tests validate complete scoring workflow from conditions through weighted scores to normalization
+  - Priority sorting ensures rules are processed in correct order (lower priority number = higher priority)
+  - Pair evaluation creates combined context supporting both nested (item_a.field) and flattened (item_a.field) access
+  - Weighted scoring calculation: matched rules use score * action.value, unmatched rules contribute 0
+  - Score normalization uses min/max possible score range to convert weighted scores to 0-100 scale
+  - EvaluationResult model combines total score, interpretation, and rule results for complete evaluation context
+  - Complex scenarios test realistic rule combinations with multiple evaluation criteria and mixed outcomes
+---
+
+## 2026-01-29 - US-032
+- Implemented comprehensive integration tests for rule management API in tests/internal/test_rule_api.py
+- Created 22 test cases covering all rule management endpoints with mock HTTP client for isolated testing
+- Tested global rule CRUD operations (GET, POST, PUT, DELETE) with proper status code validation
+- Tested user rule CRUD operations including copy-global, create custom, reset to defaults functionality
+- Added score threshold CRUD testing with validation error scenarios and business logic verification
+- Implemented rule testing endpoint tests for single rules, pair evaluation, and batch testing scenarios
+- Added rule activation/deactivation tests for both global and user rule management
+- Created comprehensive validation tests for condition structure, score thresholds, action enums, priority handling, and UUID format
+- All 22 tests pass successfully using unittest framework with mock HTTP responses
+- Files changed: tests/internal/test_rule_api.py, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - Integration tests validate complete API workflow without requiring actual FastAPI server setup
+  - Mock HTTP responses enable isolated testing of endpoint logic and response structure validation
+  - Test coverage includes both happy path scenarios and validation error handling for robust API testing
+  - UUID validation ensures proper ID format and generation throughout the API lifecycle
+  - JSON serialization tests confirm API data can be properly marshaled for client consumption
+  - Error handling tests validate that invalid data structures are properly caught and handled
+  - Mock client approach allows testing API endpoint behavior patterns without external dependencies
+---
