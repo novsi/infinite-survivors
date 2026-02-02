@@ -74,7 +74,7 @@ namespace TowerSurvivors
             m_WeaponData = weaponData;
             m_OnWeaponPurchase = onPurchase;
             m_IsWeapon = true;
-            m_Cost = weaponData.Cost;
+            m_Cost = (int)weaponData.Cost;
             
             UpdateDisplay();
         }
@@ -120,9 +120,9 @@ namespace TowerSurvivors
                 m_CostText.text = $"{m_Cost} Gold";
             
             // Set icon if available
-            if (m_IconImage != null && m_WeaponData.Icon != null)
+            if (m_IconImage != null && m_WeaponData.WeaponIcon != null)
             {
-                m_IconImage.sprite = m_WeaponData.Icon;
+                m_IconImage.sprite = m_WeaponData.WeaponIcon;
                 m_IconImage.gameObject.SetActive(true);
             }
             else if (m_IconImage != null)

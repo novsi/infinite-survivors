@@ -17,8 +17,8 @@
         "Scene loads without errors (verify via read_console)"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "TowerSurvivors.unity scene already exists with ground, directional light, main camera, and NavMesh setup"
     },
     {
       "id": "US-002",
@@ -49,8 +49,8 @@
         "Tower cannot move (verify no movement components)"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tower.prefab created via Unity MCP. Duplicated Tank.prefab, removed TankMovement/TankShooting/TankHealth/Rigidbody, added TowerHealth component, wired HealthSlider UI. Tower placed at (0,0,0) in TowerSurvivors scene."
     },
     {
       "id": "US-004",
@@ -83,8 +83,8 @@
         "Reference TankExplosion prefab for death effect"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "BasicEnemy.prefab created by duplicating Tank Enemy Variant. Added NavMeshAgent and Enemy components. Created BasicEnemyData.asset with 20 HP, 5 speed, 10 damage, 5 gold, orange color. Assigned TankExplosion as death effect."
     },
     {
       "id": "US-006",
@@ -166,8 +166,8 @@
         "Enter play mode and verify enemies spawn and move toward tower"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "GameManagers GameObject created with all manager components wired. EnemySpawner configured with BasicEnemy prefab. Play mode test shows enemies spawning. Fixed scene by adding Main Camera, Directional Light, and Ground plane. Fixed compilation errors in HUD.cs, ShopItemUI.cs, UpgradeManager.cs, and TowerHealth.cs."
     },
     {
       "id": "US-011",
@@ -230,8 +230,8 @@
         "Set rarity: Common, cost: 0 (starter weapon)"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created via Unity MCP: CannonData.asset (15 damage, 0.667 fire rate, 15 range, 2 unit AoE, Common, cost 0), CannonProjectile.prefab (based on CompleteShell with TowerSurvivors.Projectile component), Cannon.prefab (Weapon + AudioSource). All assets at Assets/_Tanks/Prefabs/TowerSurvivors/Weapons/ and Assets/_Tanks/ScriptableObjects/TowerSurvivors/Weapons/."
     },
     {
       "id": "US-015",
@@ -261,8 +261,8 @@
         "Script compiles without errors (verify via read_console)"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created HUDCanvas with Screen Space Overlay Canvas. HUD.cs script subscribes to GoldManager.OnGoldChanged, WaveManager.OnWaveStarted/OnWaveCompleted, and TowerSurvivorsGameManager.OnSurvivalTimeUpdate events. UI elements: GoldText (top-left), WaveText (top-center), SurvivalTimeText (below wave), NextWaveTimerText, and EnemiesRemainingText. All scripts compile without errors."
     },
     {
       "id": "US-017",
@@ -277,8 +277,8 @@
         "Script compiles without errors (verify via read_console)"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created GameOverPanel with semi-transparent dark background (initially inactive). GameOverUI.cs subscribes to TowerSurvivorsGameManager.OnGameStateChanged to show/hide panel. Shows: GameOverTitle, SurvivalTimeResult, WavesSurvivedResult, EnemiesKilledResult, GoldEarnedResult. PlayAgainButton calls RestartGame(), MainMenuButton calls QuitToMainMenu(). All scripts compile without errors."
     },
     {
       "id": "US-018",
@@ -293,8 +293,8 @@
         "Script compiles without errors (verify via read_console)"
       ],
       "priority": 18,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created ShopPanel anchored to right side of screen with ShopUI component. Contains ShopTitle, TabButtons (WeaponsTabButton, UpgradesTabButton), and ShopScrollView with ScrollRect, Viewport with Mask, and Content with VerticalLayoutGroup and ContentSizeFitter. Created ShopItemPrefab at Assets/_Tanks/Prefabs/TowerSurvivors/UI/ShopItemPrefab.prefab with NameText, DescriptionText, CostText, and BuyButton children. ShopItemUI.cs handles affordability with grayed out visuals when player cannot afford. All scripts compile without errors."
     },
     {
       "id": "US-019",

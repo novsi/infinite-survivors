@@ -12,6 +12,14 @@ namespace TowerSurvivors
         [SerializeField] private TextMeshProUGUI m_SurvivalTimeText;
         [SerializeField] private TextMeshProUGUI m_NextWaveTimerText;
         [SerializeField] private TextMeshProUGUI m_EnemiesRemainingText;
+        [SerializeField] private TextMeshProUGUI m_BossWarningText;
+
+        [Header("Boss Warning Settings")]
+        [SerializeField] private float m_BossWarningDuration = 2f;
+        [SerializeField] private Color m_BossWarningColor = new Color(1f, 0.2f, 0.2f, 1f);
+        [SerializeField] private bool m_EnableScreenShake = true;
+        [SerializeField] private float m_ScreenShakeDuration = 0.5f;
+        [SerializeField] private float m_ScreenShakeIntensity = 0.3f;
         
         [Header("Progress Bars")]
         [SerializeField] private Slider m_WaveProgressSlider;
@@ -66,6 +74,7 @@ namespace TowerSurvivors
             {
                 m_WaveManager.OnWaveStarted.AddListener(UpdateWaveDisplay);
                 m_WaveManager.OnWaveCompleted.AddListener(OnWaveCompleted);
+                m_WaveManager.OnBossSpawned.AddListener(OnBossSpawned);
             }
             
             // Subscribe to game time updates
@@ -88,12 +97,18 @@ namespace TowerSurvivors
             UpdateGoldDisplay(m_GoldManager?.CurrentGold ?? 0f);
             UpdateWaveDisplay(m_WaveManager?.CurrentWave ?? 1);
             UpdateSurvivalTime(0f);
-            UpdateTowerHealthDisplay(m_TowerHealth?.CurrentHealth ?? 100f, m_TowerHealth?.MaxHealth ?? 100f);
+            UpdateTowerHealthDisplay(m_TowerHealth?.CurrentHealth ?? 100f);
             
             // Initialize progress bars
             if (m_WaveProgressSlider != null)
             {
                 m_WaveProgressSlider.value = 0f;
+            }
+
+            // Hide boss warning initially
+            if (m_BossWarningText != null)
+            {
+                m_BossWarningText.gameObject.SetActive(false);
             }
         }
         
@@ -184,11 +199,11 @@ namespace TowerSurvivors
             }
         }
         
-        private void UpdateTowerHealthDisplay(float currentHealth, float maxHealth)
+        private void UpdateTowerHealthDisplay(float currentHealth)
         {
-            if (m_TowerHealthSlider != null)
+            if (m_TowerHealthSlider != null && m_TowerHealth != null)
             {
-                m_TowerHealthSlider.value = currentHealth / maxHealth;
+                m_TowerHealthSlider.value = currentHealth / m_TowerHealth.MaxHealth;
             }
         }
         
@@ -199,6 +214,62 @@ namespace TowerSurvivors
             {
                 m_NextWaveTimerText.text = "Wave Complete!";
             }
+        }
+
+        private void OnBossSpawned(int bossAppearance)
+        {
+            // Show boss warning text
+            ShowBossWarning(bossAppearance);
+
+            // Trigger screen shake
+            if (m_EnableScreenShake)
+            {
+                StartCoroutine(ScreenShakeCoroutine());
+            }
+        }
+
+        private void ShowBossWarning(int bossAppearance)
+        {
+            if (m_BossWarningText == null) return;
+
+            m_BossWarningText.text = $"BOSS INCOMING!";
+            m_BossWarningText.color = m_BossWarningColor;
+            m_BossWarningText.gameObject.SetActive(true);
+
+            // Hide warning after duration
+            StartCoroutine(HideBossWarningAfterDelay());
+        }
+
+        private System.Collections.IEnumerator HideBossWarningAfterDelay()
+        {
+            yield return new WaitForSeconds(m_BossWarningDuration);
+
+            if (m_BossWarningText != null)
+            {
+                m_BossWarningText.gameObject.SetActive(false);
+            }
+        }
+
+        private System.Collections.IEnumerator ScreenShakeCoroutine()
+        {
+            Camera mainCamera = Camera.main;
+            if (mainCamera == null) yield break;
+
+            Vector3 originalPosition = mainCamera.transform.position;
+            float elapsed = 0f;
+
+            while (elapsed < m_ScreenShakeDuration)
+            {
+                float x = Random.Range(-1f, 1f) * m_ScreenShakeIntensity;
+                float y = Random.Range(-1f, 1f) * m_ScreenShakeIntensity;
+
+                mainCamera.transform.position = originalPosition + new Vector3(x, y, 0f);
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            mainCamera.transform.position = originalPosition;
         }
         
         private void OnGameStateChanged(GameState newState)
@@ -236,7 +307,7 @@ namespace TowerSurvivors
             if (towerHealth != null)
             {
                 towerHealth.OnHealthChanged.AddListener(UpdateTowerHealthDisplay);
-                UpdateTowerHealthDisplay(towerHealth.CurrentHealth, towerHealth.MaxHealth);
+                UpdateTowerHealthDisplay(towerHealth.CurrentHealth);
             }
         }
         
@@ -252,6 +323,7 @@ namespace TowerSurvivors
             {
                 m_WaveManager.OnWaveStarted.RemoveListener(UpdateWaveDisplay);
                 m_WaveManager.OnWaveCompleted.RemoveListener(OnWaveCompleted);
+                m_WaveManager.OnBossSpawned.RemoveListener(OnBossSpawned);
             }
             
             if (m_GameManager != null)

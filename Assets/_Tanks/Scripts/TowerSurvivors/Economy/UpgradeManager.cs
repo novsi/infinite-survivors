@@ -209,7 +209,7 @@ namespace TowerSurvivors
         {
             if (m_GoldManager != null)
             {
-                m_GoldManager.AddPassiveGeneration(goldBonus);
+                m_GoldManager.IncreasePassiveGoldGeneration(goldBonus);
             }
         }
         

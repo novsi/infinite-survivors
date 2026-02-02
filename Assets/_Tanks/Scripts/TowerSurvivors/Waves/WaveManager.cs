@@ -6,7 +6,7 @@ using UnityEngine.Events;
 namespace TowerSurvivors
 {
     [System.Serializable]
-    public class WaveConfig
+    public class WaveData
     {
         public int waveNumber;
         public List<GameObject> enemyTypes = new List<GameObject>();
@@ -272,9 +272,9 @@ namespace TowerSurvivors
             }
         }
         
-        public WaveConfig GetCurrentWaveConfig()
+        public WaveData GetCurrentWaveData()
         {
-            WaveConfig config = new WaveConfig
+            WaveData config = new WaveData
             {
                 waveNumber = m_CurrentWave,
                 isBossWave = IsBossWave,

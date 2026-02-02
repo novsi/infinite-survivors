@@ -97,14 +97,28 @@ namespace TowerSurvivors
         public void SetMaxHealth(float newMaxHealth)
         {
             if (newMaxHealth <= 0f) return;
-            
+
             // Calculate health percentage
             float healthPercentage = m_CurrentHealth / m_MaxHealth;
-            
+
             // Update max health and current health proportionally
             m_MaxHealth = newMaxHealth;
             m_CurrentHealth = m_MaxHealth * healthPercentage;
-            
+
+            // Update UI
+            SetupHealthUI();
+            UpdateHealthUI();
+            OnHealthChanged?.Invoke(m_CurrentHealth);
+        }
+
+        public void IncreaseMaxHealth(float amount)
+        {
+            if (amount <= 0f) return;
+
+            // Increase max health and add the same amount to current health
+            m_MaxHealth += amount;
+            m_CurrentHealth = Mathf.Min(m_CurrentHealth + amount, m_MaxHealth);
+
             // Update UI
             SetupHealthUI();
             UpdateHealthUI();

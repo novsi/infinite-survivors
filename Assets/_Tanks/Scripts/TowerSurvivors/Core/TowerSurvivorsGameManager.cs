@@ -88,17 +88,25 @@ namespace TowerSurvivors
         private void InitializeGame()
         {
             if (m_GameInitialized) return;
-            
+
             // Find manager references if not assigned
             FindManagerReferences();
-            
+
             // Subscribe to events
             SubscribeToEvents();
-            
-            // Set initial game state
-            ChangeGameState(m_InitialState);
-            
-            m_GameInitialized = true;
+
+            // If initial state is Playing, call StartGame to initialize all systems
+            if (m_InitialState == GameState.Playing)
+            {
+                m_GameInitialized = true;
+                StartGame();
+            }
+            else
+            {
+                // Set initial game state
+                ChangeGameState(m_InitialState);
+                m_GameInitialized = true;
+            }
         }
         
         private void FindManagerReferences()
