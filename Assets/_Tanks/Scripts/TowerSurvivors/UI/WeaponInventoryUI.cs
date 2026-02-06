@@ -12,11 +12,12 @@ namespace TowerSurvivors
         [SerializeField] private Transform m_WeaponSlotContainer;      // Parent for weapon slots
         [SerializeField] private ScrollRect m_ScrollRect;              // For scrolling when > 8 weapons
         [SerializeField] private GameObject m_WeaponSlotPrefab;        // Prefab for each weapon slot
-        
+        [SerializeField] private TextMeshProUGUI m_EquippedLabel;      // "EQUIPPED" label
+
         [Header("Slot Settings")]
         [SerializeField] private int m_MaxVisibleSlots = 8;
-        [SerializeField] private float m_SlotSize = 64f;
-        [SerializeField] private float m_SlotSpacing = 8f;
+        [SerializeField] private float m_SlotSize = 40f;
+        [SerializeField] private float m_SlotSpacing = 6f;
         
         [Header("Pulse Effect")]
         [SerializeField] private Color m_PulseColor = new Color(1f, 1f, 0f, 1f);  // Yellow pulse
@@ -28,6 +29,7 @@ namespace TowerSurvivors
         
         // Dictionary to track weapon slots
         private Dictionary<Weapon, WeaponSlot> m_WeaponSlots = new Dictionary<Weapon, WeaponSlot>();
+        private List<GameObject> m_PlaceholderSlots = new List<GameObject>();
         
         // Internal class for weapon slot data
         private class WeaponSlot
@@ -43,10 +45,16 @@ namespace TowerSurvivors
         
         private void Awake()
         {
-            // Auto-find WeaponManager if not assigned
             if (m_WeaponManager == null)
             {
                 m_WeaponManager = FindObjectOfType<WeaponManager>();
+            }
+
+            // Auto-find EquippedLabel if not assigned
+            if (m_EquippedLabel == null)
+            {
+                Transform t = transform.Find("EquippedLabel");
+                if (t != null) m_EquippedLabel = t.GetComponent<TextMeshProUGUI>();
             }
         }
         
@@ -86,27 +94,73 @@ namespace TowerSurvivors
         private void InitializeExistingWeapons()
         {
             if (m_WeaponManager == null) return;
-            
+
             foreach (Weapon weapon in m_WeaponManager.EquippedWeapons)
             {
                 OnWeaponAdded(weapon);
             }
+
+            RefreshPlaceholderSlots();
+        }
+
+        private void RefreshPlaceholderSlots()
+        {
+            // Clear existing placeholders
+            foreach (var placeholder in m_PlaceholderSlots)
+            {
+                if (placeholder != null) Destroy(placeholder);
+            }
+            m_PlaceholderSlots.Clear();
+
+            // Create placeholder slots to fill up to m_MaxVisibleSlots
+            int slotsNeeded = m_MaxVisibleSlots - m_WeaponSlots.Count;
+            for (int i = 0; i < slotsNeeded; i++)
+            {
+                GameObject placeholder = CreatePlaceholderSlot(i);
+                if (placeholder != null) m_PlaceholderSlots.Add(placeholder);
+            }
+        }
+
+        private GameObject CreatePlaceholderSlot(int index)
+        {
+            if (m_WeaponSlotContainer == null) return null;
+
+            GameObject slotObj = new GameObject($"EmptySlot_{index}");
+            slotObj.transform.SetParent(m_WeaponSlotContainer, false);
+
+            RectTransform rectTransform = slotObj.AddComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(m_SlotSize, m_SlotSize);
+
+            Image bgImage = slotObj.AddComponent<Image>();
+            bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.4f); // Dim placeholder
+
+            // Add outline for dim border effect
+            var outline = slotObj.AddComponent<Outline>();
+            outline.effectColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+            outline.effectDistance = new Vector2(1f, 1f);
+
+            LayoutElement layoutElement = slotObj.AddComponent<LayoutElement>();
+            layoutElement.preferredWidth = m_SlotSize;
+            layoutElement.preferredHeight = m_SlotSize;
+
+            return slotObj;
         }
         
         private void OnWeaponAdded(Weapon weapon)
         {
             if (weapon == null || m_WeaponSlots.ContainsKey(weapon)) return;
-            
+
             // Create new weapon slot
             WeaponSlot slot = CreateWeaponSlot(weapon);
             if (slot != null)
             {
                 m_WeaponSlots.Add(weapon, slot);
-                
+
                 // Subscribe to weapon fire event
                 weapon.OnFire.AddListener(() => OnWeaponFired(weapon));
             }
-            
+
+            RefreshPlaceholderSlots();
             UpdateScrollability();
         }
         
@@ -135,6 +189,7 @@ namespace TowerSurvivors
             }
             
             m_WeaponSlots.Remove(weapon);
+            RefreshPlaceholderSlots();
             UpdateScrollability();
         }
         
@@ -177,51 +232,54 @@ namespace TowerSurvivors
         
         private GameObject CreateSlotDynamically(WeaponData weaponData)
         {
-            // Create the slot container
+            // Create the slot container - compact square for horizontal bar
             GameObject slotObj = new GameObject($"WeaponSlot_{weaponData.WeaponName}");
             slotObj.transform.SetParent(m_WeaponSlotContainer, false);
-            
-            // Add RectTransform
+
             RectTransform rectTransform = slotObj.AddComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(m_SlotSize, m_SlotSize + 20f); // Extra height for name
-            
-            // Add background image
+            rectTransform.sizeDelta = new Vector2(m_SlotSize, m_SlotSize);
+
             Image bgImage = slotObj.AddComponent<Image>();
             bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-            
-            // Add layout element for proper sizing in layout groups
+
+            // Add outline border
+            var outline = slotObj.AddComponent<Outline>();
+            outline.effectColor = new Color(0.3f, 0.3f, 0.3f, 0.6f);
+            outline.effectDistance = new Vector2(1f, 1f);
+
             LayoutElement layoutElement = slotObj.AddComponent<LayoutElement>();
             layoutElement.preferredWidth = m_SlotSize;
-            layoutElement.preferredHeight = m_SlotSize + 20f;
-            
-            // Create icon image child
+            layoutElement.preferredHeight = m_SlotSize;
+
+            // Create icon image child - fills most of the slot
             GameObject iconObj = new GameObject("WeaponIcon");
             iconObj.transform.SetParent(slotObj.transform, false);
-            
+
             RectTransform iconRect = iconObj.AddComponent<RectTransform>();
-            iconRect.anchorMin = new Vector2(0.1f, 0.25f);
-            iconRect.anchorMax = new Vector2(0.9f, 0.95f);
+            iconRect.anchorMin = new Vector2(0.1f, 0.1f);
+            iconRect.anchorMax = new Vector2(0.9f, 0.9f);
             iconRect.offsetMin = Vector2.zero;
             iconRect.offsetMax = Vector2.zero;
-            
+
             Image iconImage = iconObj.AddComponent<Image>();
             iconImage.preserveAspect = true;
-            
-            // Create name text child
+
+            // Create name text child - hidden in horizontal mode, used for tooltip
             GameObject nameObj = new GameObject("NameText");
             nameObj.transform.SetParent(slotObj.transform, false);
-            
+            nameObj.SetActive(false); // Hidden in horizontal compact layout
+
             RectTransform nameRect = nameObj.AddComponent<RectTransform>();
             nameRect.anchorMin = new Vector2(0f, 0f);
             nameRect.anchorMax = new Vector2(1f, 0.25f);
             nameRect.offsetMin = new Vector2(2f, 0f);
             nameRect.offsetMax = new Vector2(-2f, 0f);
-            
+
             TextMeshProUGUI nameText = nameObj.AddComponent<TextMeshProUGUI>();
-            nameText.fontSize = 10f;
+            nameText.fontSize = 8f;
             nameText.alignment = TextAlignmentOptions.Center;
             nameText.overflowMode = TextOverflowModes.Ellipsis;
-            
+
             return slotObj;
         }
         
@@ -365,10 +423,11 @@ namespace TowerSurvivors
         private void UpdateScrollability()
         {
             if (m_ScrollRect == null) return;
-            
-            // Enable/disable scrolling based on weapon count
+
+            // Enable/disable horizontal scrolling based on weapon count
             bool needsScroll = m_WeaponSlots.Count > m_MaxVisibleSlots;
-            m_ScrollRect.vertical = needsScroll;
+            m_ScrollRect.horizontal = needsScroll;
+            m_ScrollRect.vertical = false;
         }
         
         // Public methods for external control
@@ -409,6 +468,12 @@ namespace TowerSurvivors
                 }
             }
             m_WeaponSlots.Clear();
+
+            foreach (var placeholder in m_PlaceholderSlots)
+            {
+                if (placeholder != null) Destroy(placeholder);
+            }
+            m_PlaceholderSlots.Clear();
         }
         
         private void OnDestroy()

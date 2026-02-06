@@ -1,0 +1,15 @@
+# Ralph Progress Log
+Started: Fri Feb  6 2026
+
+## Codebase Patterns
+- Tower Survivors uses separate namespace `TowerSurvivors` to avoid conflicts with `Tanks.Complete`
+- Scripts follow Unity's private serialized field convention with `m_` prefix
+- All managers use UnityEvent system for decoupled communication
+- ScriptableObjects used for data-driven design (EnemyData, WeaponData, UpgradeData)
+- Singleton pattern used for core managers (GoldManager, TowerSurvivorsGameManager)
+- UI scripts are in Assets/_Tanks/Scripts/TowerSurvivors/UI/
+- UI uses TextMeshPro for all text elements
+- HUDCanvas uses Screen Space Overlay with CanvasScaler
+- Unity MCP manage_components set_property uses {"instanceID": id} format for object references on scene instances
+- Target design reference: scripts/ralph/Target.png
+---

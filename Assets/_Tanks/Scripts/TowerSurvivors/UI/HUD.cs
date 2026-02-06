@@ -13,6 +13,7 @@ namespace TowerSurvivors
         [SerializeField] private TextMeshProUGUI m_NextWaveTimerText;
         [SerializeField] private TextMeshProUGUI m_EnemiesRemainingText;
         [SerializeField] private TextMeshProUGUI m_BossWarningText;
+        [SerializeField] private TextMeshProUGUI m_TowerHealthText;
 
         [Header("Boss Warning Settings")]
         [SerializeField] private float m_BossWarningDuration = 2f;
@@ -20,147 +21,248 @@ namespace TowerSurvivors
         [SerializeField] private bool m_EnableScreenShake = true;
         [SerializeField] private float m_ScreenShakeDuration = 0.5f;
         [SerializeField] private float m_ScreenShakeIntensity = 0.3f;
-        
+
         [Header("Progress Bars")]
         [SerializeField] private Slider m_WaveProgressSlider;
         [SerializeField] private Slider m_TowerHealthSlider;
-        
+
+        [Header("Level Indicator")]
+        [SerializeField] private GameObject m_LevelIndicatorPanel;
+        [SerializeField] private TextMeshProUGUI m_LevelText;
+
+        [Header("Buttons")]
+        [SerializeField] private Button m_PauseButton;
+        [SerializeField] private Button m_AbilityButton;
+
+        [Header("Panels")]
+        [SerializeField] private GameObject m_HealthBarPanel;
+        [SerializeField] private GameObject m_CurrencyPanel;
+
         [Header("Manager References")]
         [SerializeField] private GoldManager m_GoldManager;
         [SerializeField] private WaveManager m_WaveManager;
         [SerializeField] private TowerSurvivorsGameManager m_GameManager;
         [SerializeField] private TowerHealth m_TowerHealth;
-        
+
         private void Awake()
         {
-            // Auto-find manager references if not assigned
             FindManagerReferences();
+            FindUIReferences();
         }
-        
+
         private void Start()
         {
-            // Subscribe to manager events
             SubscribeToEvents();
-            
-            // Initialize UI elements
             InitializeUI();
         }
-        
+
         private void FindManagerReferences()
         {
             if (m_GoldManager == null)
                 m_GoldManager = FindObjectOfType<GoldManager>();
-            
+
             if (m_WaveManager == null)
                 m_WaveManager = FindObjectOfType<WaveManager>();
-            
+
             if (m_GameManager == null)
                 m_GameManager = TowerSurvivorsGameManager.Instance ?? FindObjectOfType<TowerSurvivorsGameManager>();
-            
+
             if (m_TowerHealth == null)
                 m_TowerHealth = FindObjectOfType<TowerHealth>();
         }
-        
+
+        private void FindUIReferences()
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas == null) canvas = FindObjectOfType<Canvas>();
+            if (canvas == null) return;
+
+            Transform root = canvas.transform;
+
+            if (m_GoldCounterText == null)
+            {
+                Transform t = root.Find("CurrencyPanel/GoldText");
+                if (t == null) t = root.Find("GoldText");
+                if (t != null) m_GoldCounterText = t.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (m_WaveNumberText == null)
+            {
+                Transform t = root.Find("WaveText");
+                if (t != null) m_WaveNumberText = t.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (m_SurvivalTimeText == null)
+            {
+                Transform t = root.Find("SurvivalTimeText");
+                if (t != null) m_SurvivalTimeText = t.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (m_NextWaveTimerText == null)
+            {
+                Transform t = root.Find("NextWaveTimerText");
+                if (t != null) m_NextWaveTimerText = t.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (m_EnemiesRemainingText == null)
+            {
+                Transform t = root.Find("EnemiesRemainingText");
+                if (t != null) m_EnemiesRemainingText = t.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (m_TowerHealthSlider == null)
+            {
+                Transform t = root.Find("HealthBarPanel/TowerHealthSlider");
+                if (t != null) m_TowerHealthSlider = t.GetComponent<Slider>();
+            }
+
+            if (m_TowerHealthText == null)
+            {
+                Transform t = root.Find("HealthBarPanel/HealthText");
+                if (t != null) m_TowerHealthText = t.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (m_PauseButton == null)
+            {
+                Transform t = root.Find("PauseButton");
+                if (t != null) m_PauseButton = t.GetComponent<Button>();
+            }
+
+            if (m_HealthBarPanel == null)
+            {
+                Transform t = root.Find("HealthBarPanel");
+                if (t != null) m_HealthBarPanel = t.gameObject;
+            }
+
+            if (m_CurrencyPanel == null)
+            {
+                Transform t = root.Find("CurrencyPanel");
+                if (t != null) m_CurrencyPanel = t.gameObject;
+            }
+
+            if (m_LevelIndicatorPanel == null)
+            {
+                Transform t = root.Find("LevelIndicatorPanel");
+                if (t != null) m_LevelIndicatorPanel = t.gameObject;
+            }
+
+            if (m_LevelText == null)
+            {
+                Transform t = root.Find("LevelIndicatorPanel/LevelText");
+                if (t != null) m_LevelText = t.GetComponent<TextMeshProUGUI>();
+            }
+        }
+
         private void SubscribeToEvents()
         {
-            // Subscribe to gold changes
             if (m_GoldManager != null)
             {
                 m_GoldManager.OnGoldChanged.AddListener(UpdateGoldDisplay);
             }
-            
-            // Subscribe to wave changes
+
             if (m_WaveManager != null)
             {
                 m_WaveManager.OnWaveStarted.AddListener(UpdateWaveDisplay);
+                m_WaveManager.OnWaveStarted.AddListener(UpdateLevelDisplay);
                 m_WaveManager.OnWaveCompleted.AddListener(OnWaveCompleted);
                 m_WaveManager.OnBossSpawned.AddListener(OnBossSpawned);
             }
-            
-            // Subscribe to game time updates
+
             if (m_GameManager != null)
             {
                 m_GameManager.OnSurvivalTimeUpdate.AddListener(UpdateSurvivalTime);
                 m_GameManager.OnGameStateChanged.AddListener(OnGameStateChanged);
             }
-            
-            // Subscribe to tower health changes
+
             if (m_TowerHealth != null)
             {
                 m_TowerHealth.OnHealthChanged.AddListener(UpdateTowerHealthDisplay);
             }
+
+            if (m_PauseButton != null)
+            {
+                m_PauseButton.onClick.AddListener(OnPauseButtonClicked);
+            }
+
+            if (m_AbilityButton != null)
+            {
+                m_AbilityButton.onClick.AddListener(OnAbilityButtonClicked);
+            }
         }
-        
+
         private void InitializeUI()
         {
-            // Initialize all UI elements with default values
             UpdateGoldDisplay(m_GoldManager?.CurrentGold ?? 0f);
             UpdateWaveDisplay(m_WaveManager?.CurrentWave ?? 1);
             UpdateSurvivalTime(0f);
             UpdateTowerHealthDisplay(m_TowerHealth?.CurrentHealth ?? 100f);
+            UpdateLevelDisplay(m_WaveManager?.CurrentWave ?? 1);
 
-            // Initialize progress bars
             if (m_WaveProgressSlider != null)
             {
                 m_WaveProgressSlider.value = 0f;
             }
 
-            // Hide boss warning initially
             if (m_BossWarningText != null)
             {
                 m_BossWarningText.gameObject.SetActive(false);
             }
 
-            // Set correct initial visibility based on current game state
             GameState currentState = m_GameManager?.CurrentGameState ?? GameState.MainMenu;
             OnGameStateChanged(currentState);
         }
-        
+
         private void Update()
         {
-            // Update wave timer and progress during gameplay
             if (m_GameManager?.CurrentGameState == GameState.Playing)
             {
                 UpdateWaveTimer();
                 UpdateEnemiesRemaining();
             }
         }
-        
+
         private void UpdateGoldDisplay(float goldAmount)
         {
             if (m_GoldCounterText != null)
             {
-                m_GoldCounterText.text = $"Gold: {goldAmount:F0}";
+                m_GoldCounterText.text = $"\u2299 {goldAmount:N0}";
+                m_GoldCounterText.color = new Color(1f, 0.7f, 0.28f, 1f);
             }
         }
-        
+
         private void UpdateWaveDisplay(int waveNumber)
         {
             if (m_WaveNumberText != null)
             {
-                m_WaveNumberText.text = $"Wave {waveNumber}";
+                m_WaveNumberText.text = $"WAVE <b>{waveNumber}</b>";
             }
         }
-        
+
+        private void UpdateLevelDisplay(int waveNumber)
+        {
+            if (m_LevelText != null)
+            {
+                m_LevelText.text = $"\u2B06 Lv. {waveNumber}";
+            }
+        }
+
         private void UpdateSurvivalTime(float survivalTime)
         {
             if (m_SurvivalTimeText != null)
             {
-                // Format as MM:SS
                 int minutes = Mathf.FloorToInt(survivalTime / 60f);
                 int seconds = Mathf.FloorToInt(survivalTime % 60f);
                 m_SurvivalTimeText.text = $"Time: {minutes:00}:{seconds:00}";
             }
         }
-        
+
         private void UpdateWaveTimer()
         {
             if (m_WaveManager == null) return;
-            
+
             float timeUntilNextWave = m_WaveManager.TimeToNextWave;
-            float waveInterval = 30f; // Default wave interval - matches WaveManager's m_WaveDuration
-            
-            // Update next wave timer text
+            float waveInterval = 30f;
+
             if (m_NextWaveTimerText != null && timeUntilNextWave > 0)
             {
                 m_NextWaveTimerText.text = $"Next Wave: {timeUntilNextWave:F0}s";
@@ -169,32 +271,25 @@ namespace TowerSurvivors
             {
                 m_NextWaveTimerText.text = "Wave Active";
             }
-            
-            // Update wave progress slider
+
             if (m_WaveProgressSlider != null)
             {
                 float progress = 1f - (timeUntilNextWave / waveInterval);
                 m_WaveProgressSlider.value = Mathf.Clamp01(progress);
             }
         }
-        
+
         private void UpdateEnemiesRemaining()
         {
             if (m_EnemiesRemainingText != null)
             {
-                // Find enemy spawner to get active enemy count
                 EnemySpawner spawner = FindObjectOfType<EnemySpawner>();
                 if (spawner != null)
                 {
                     int enemiesRemaining = spawner.ActiveEnemyCount;
-                    if (enemiesRemaining > 0)
-                    {
-                        m_EnemiesRemainingText.text = $"Enemies: {enemiesRemaining}";
-                    }
-                    else
-                    {
-                        m_EnemiesRemainingText.text = "Enemies: --";
-                    }
+                    m_EnemiesRemainingText.text = enemiesRemaining > 0
+                        ? $"Enemies: {enemiesRemaining}"
+                        : "Enemies: --";
                 }
                 else
                 {
@@ -202,30 +297,59 @@ namespace TowerSurvivors
                 }
             }
         }
-        
+
         private void UpdateTowerHealthDisplay(float currentHealth)
         {
             if (m_TowerHealthSlider != null && m_TowerHealth != null)
             {
                 m_TowerHealthSlider.value = currentHealth / m_TowerHealth.MaxHealth;
+
+                var fillImage = m_TowerHealthSlider.fillRect?.GetComponent<Image>();
+                if (fillImage != null)
+                {
+                    fillImage.color = new Color(0.8f, 0.2f, 0.2f, 1f);
+                }
+
+                var backgroundImage = m_TowerHealthSlider.GetComponent<Image>();
+                if (backgroundImage != null)
+                {
+                    backgroundImage.color = new Color(0.2f, 0.2f, 0.2f, 1f);
+                }
+            }
+
+            if (m_TowerHealthText != null && m_TowerHealth != null)
+            {
+                int currentHp = Mathf.RoundToInt(currentHealth);
+                int maxHp = Mathf.RoundToInt(m_TowerHealth.MaxHealth);
+                m_TowerHealthText.text = $"{currentHp} / {maxHp}";
             }
         }
-        
+
         private void OnWaveCompleted(int waveNumber)
         {
-            // Wave completed - could add visual feedback here
             if (m_NextWaveTimerText != null)
             {
                 m_NextWaveTimerText.text = "Wave Complete!";
             }
         }
 
+        private void OnPauseButtonClicked()
+        {
+            if (m_GameManager != null)
+            {
+                m_GameManager.PauseGame();
+            }
+        }
+
+        private void OnAbilityButtonClicked()
+        {
+            Debug.Log("Ability button pressed - coming soon");
+        }
+
         private void OnBossSpawned(int bossAppearance)
         {
-            // Show boss warning text
             ShowBossWarning(bossAppearance);
 
-            // Trigger screen shake
             if (m_EnableScreenShake)
             {
                 StartCoroutine(ScreenShakeCoroutine());
@@ -236,11 +360,10 @@ namespace TowerSurvivors
         {
             if (m_BossWarningText == null) return;
 
-            m_BossWarningText.text = $"BOSS INCOMING!";
+            m_BossWarningText.text = "BOSS INCOMING!";
             m_BossWarningText.color = m_BossWarningColor;
             m_BossWarningText.gameObject.SetActive(true);
 
-            // Hide warning after duration
             StartCoroutine(HideBossWarningAfterDelay());
         }
 
@@ -275,39 +398,55 @@ namespace TowerSurvivors
 
             mainCamera.transform.position = originalPosition;
         }
-        
+
         private void OnGameStateChanged(GameState newState)
         {
-            // Show/hide UI elements based on game state
             bool showGameplayUI = newState == GameState.Playing || newState == GameState.Paused;
 
-            // Hide/show individual HUD elements
             if (m_GoldCounterText != null)
                 m_GoldCounterText.gameObject.SetActive(showGameplayUI);
 
             if (m_WaveNumberText != null)
                 m_WaveNumberText.gameObject.SetActive(showGameplayUI);
 
+            // Hide elements not in target design
             if (m_SurvivalTimeText != null)
-                m_SurvivalTimeText.gameObject.SetActive(showGameplayUI);
+                m_SurvivalTimeText.gameObject.SetActive(false);
 
             if (m_NextWaveTimerText != null)
-                m_NextWaveTimerText.gameObject.SetActive(showGameplayUI);
+                m_NextWaveTimerText.gameObject.SetActive(false);
 
             if (m_EnemiesRemainingText != null)
-                m_EnemiesRemainingText.gameObject.SetActive(showGameplayUI);
+                m_EnemiesRemainingText.gameObject.SetActive(false);
 
             if (m_BossWarningText != null && !showGameplayUI)
                 m_BossWarningText.gameObject.SetActive(false);
 
             if (m_WaveProgressSlider != null)
-                m_WaveProgressSlider.gameObject.SetActive(showGameplayUI);
+                m_WaveProgressSlider.gameObject.SetActive(false);
 
             if (m_TowerHealthSlider != null)
                 m_TowerHealthSlider.gameObject.SetActive(showGameplayUI);
+
+            if (m_TowerHealthText != null)
+                m_TowerHealthText.gameObject.SetActive(showGameplayUI);
+
+            if (m_PauseButton != null)
+                m_PauseButton.gameObject.SetActive(newState == GameState.Playing);
+
+            if (m_AbilityButton != null)
+                m_AbilityButton.gameObject.SetActive(newState == GameState.Playing);
+
+            if (m_LevelIndicatorPanel != null)
+                m_LevelIndicatorPanel.SetActive(newState == GameState.Playing);
+
+            if (m_HealthBarPanel != null)
+                m_HealthBarPanel.SetActive(showGameplayUI);
+
+            if (m_CurrencyPanel != null)
+                m_CurrencyPanel.SetActive(showGameplayUI);
         }
-        
-        // Public methods for external control
+
         public void SetGoldManagerReference(GoldManager goldManager)
         {
             m_GoldManager = goldManager;
@@ -317,7 +456,7 @@ namespace TowerSurvivors
                 UpdateGoldDisplay(goldManager.CurrentGold);
             }
         }
-        
+
         public void SetWaveManagerReference(WaveManager waveManager)
         {
             m_WaveManager = waveManager;
@@ -328,7 +467,7 @@ namespace TowerSurvivors
                 UpdateWaveDisplay(waveManager.CurrentWave);
             }
         }
-        
+
         public void SetTowerHealthReference(TowerHealth towerHealth)
         {
             m_TowerHealth = towerHealth;
@@ -338,31 +477,41 @@ namespace TowerSurvivors
                 UpdateTowerHealthDisplay(towerHealth.CurrentHealth);
             }
         }
-        
+
         private void OnDestroy()
         {
-            // Unsubscribe from all events to prevent memory leaks
             if (m_GoldManager != null)
             {
                 m_GoldManager.OnGoldChanged.RemoveListener(UpdateGoldDisplay);
             }
-            
+
             if (m_WaveManager != null)
             {
                 m_WaveManager.OnWaveStarted.RemoveListener(UpdateWaveDisplay);
+                m_WaveManager.OnWaveStarted.RemoveListener(UpdateLevelDisplay);
                 m_WaveManager.OnWaveCompleted.RemoveListener(OnWaveCompleted);
                 m_WaveManager.OnBossSpawned.RemoveListener(OnBossSpawned);
             }
-            
+
             if (m_GameManager != null)
             {
                 m_GameManager.OnSurvivalTimeUpdate.RemoveListener(UpdateSurvivalTime);
                 m_GameManager.OnGameStateChanged.RemoveListener(OnGameStateChanged);
             }
-            
+
             if (m_TowerHealth != null)
             {
                 m_TowerHealth.OnHealthChanged.RemoveListener(UpdateTowerHealthDisplay);
+            }
+
+            if (m_PauseButton != null)
+            {
+                m_PauseButton.onClick.RemoveListener(OnPauseButtonClicked);
+            }
+
+            if (m_AbilityButton != null)
+            {
+                m_AbilityButton.onClick.RemoveListener(OnAbilityButtonClicked);
             }
         }
     }
